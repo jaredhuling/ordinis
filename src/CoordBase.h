@@ -5,17 +5,19 @@
 #include "utils.h"
 
 
-template<typename VecTypeX>
+template<typename VecTypeBeta>
 class CoordBase
 {
 protected:
 
+    typedef Eigen::SparseVector<int> SparseVectori;
+
     const int nvars;      // dimension of beta
     const int nobs;       // number of rows
 
-    VecTypeX beta;        // parameters to be optimized
-    VecTypeX beta_prev;   // auxiliary parameters
-    VectorXi eligible_set;
+    VecTypeBeta beta;        // parameters to be optimized
+    VecTypeBeta beta_prev;   // auxiliary parameters
+    SparseVectori eligible_set;
     VectorXi ineligible_set;
     double loss;
 
@@ -23,7 +25,9 @@ protected:
 
     int nzero;
 
-    virtual void next_beta(VecTypeX &res, VectorXi &eligible) = 0;
+    //virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
+    virtual void next_beta(VecTypeBeta &res, SparseVectori &eligible) = 0;
+    virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
 
     virtual bool converged()
     {
@@ -55,9 +59,16 @@ public:
 
     virtual ~CoordBase() {}
 
+    void update_beta(SparseVectori &eligible)
+    {
+        //VecTypeBeta newbeta(nvars);
+        next_beta(beta, eligible);
+        //beta.swap(newbeta);
+    }
+
     void update_beta(VectorXi &eligible)
     {
-        //VecTypeX newbeta(nvars);
+        //VecTypeBeta newbeta(nvars);
         next_beta(beta, eligible);
         //beta.swap(newbeta);
     }
@@ -65,6 +76,8 @@ public:
     int solve(int maxit)
     {
         int i;
+
+        nzero = 0;
 
         for(i = 0; i < maxit; ++i)
         {
@@ -81,18 +94,12 @@ public:
 
         }
 
-        for (int j = 0; j < nvars; ++j)
-        {
-            if (beta(j) != 0)
-                ++nzero;
-        }
-
         // print_footer();
 
         return i + 1;
     }
 
-    virtual VecTypeX get_beta() { return beta; }
+    virtual VecTypeBeta get_beta() { return beta; }
     virtual int get_nzero() {return nzero;}
 
     virtual double get_loss() { return loss; }
@@ -100,5 +107,5 @@ public:
 
 
 
-#endif // COORDBASEACTIVE_H
+#endif // COORDBASE_H
 

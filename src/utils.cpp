@@ -52,3 +52,84 @@ bool stopRule(const VectorXd& cur, const VectorXd& prev, const double& tolerance
   }
   return 1;
 }
+
+bool stopRule(const SparseVector& cur, const SparseVector& prev, const double& tolerance)
+{
+
+    /*
+    for (unsigned i = 0; i < cur.size(); i++) {
+        if ( (cur.coeff(i) != 0 && prev.coeff(i) == 0) || (cur.coeff(i) == 0 && prev.coeff(i) != 0) ) {
+            return 0;
+        }
+        if (cur.coeff(i) != 0 && prev.coeff(i) != 0 &&
+            std::abs( (cur.coeff(i) - prev.coeff(i)) / prev.coeff(i)) > tolerance) {
+            return 0;
+        }
+    }
+     */
+
+    const int n1 = cur.nonZeros(), n2 = prev.nonZeros();
+    const double *v1_val = cur.valuePtr(), *v2_val = prev.valuePtr();
+    const int *v1_ind = cur.innerIndexPtr(), *v2_ind = prev.innerIndexPtr();
+
+    int i1 = 0, i2 = 0;
+    while(i1 < n1 && i2 < n2)
+    {
+        if(v1_ind[i1] == v2_ind[i2])
+        {
+            if (std::abs( (v1_val[i1] - v2_val[i2]) / v2_val[i2]) > tolerance)
+            {
+                return 0;
+            } else
+            {
+                i1++;
+                i2++;
+            }
+        } else
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+bool stopRule(SparseVector& cur, SparseVector& prev, const double& tolerance)
+{
+
+    /*
+    for (unsigned i = 0; i < cur.size(); i++) {
+    if ( (cur.coeff(i) != 0 && prev.coeff(i) == 0) || (cur.coeff(i) == 0 && prev.coeff(i) != 0) ) {
+    return 0;
+    }
+    if (cur.coeff(i) != 0 && prev.coeff(i) != 0 &&
+    std::abs( (cur.coeff(i) - prev.coeff(i)) / prev.coeff(i)) > tolerance) {
+    return 0;
+    }
+    }
+    */
+
+    const int n1 = cur.nonZeros(), n2 = prev.nonZeros();
+    const double *v1_val = cur.valuePtr(), *v2_val = prev.valuePtr();
+    const int *v1_ind = cur.innerIndexPtr(), *v2_ind = prev.innerIndexPtr();
+
+    int i1 = 0, i2 = 0;
+    while(i1 < n1 && i2 < n2)
+    {
+        if(v1_ind[i1] == v2_ind[i2])
+        {
+            if (std::abs( (v1_val[i1] - v2_val[i2]) / v2_val[i2]) > tolerance)
+            {
+                return 0;
+            } else
+            {
+                i1++;
+                i2++;
+            }
+        } else
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+

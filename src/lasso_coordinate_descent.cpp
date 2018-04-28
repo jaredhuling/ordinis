@@ -77,6 +77,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     DataStd<double> datstd(n, p, standardize, intercept);
     datstd.standardize(datX, datY);
 
+
     CoordLasso *solver;
     solver = new CoordLasso(datX, datY, penalty_factor, tol);
 
@@ -98,7 +99,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     //SpMat beta(p + 1, nlambda);
     //beta.reserve(Eigen::VectorXi::Constant(nlambda, std::min(n, p)));
 
-    MatrixXd beta(p+1, nlambda);
+    MatrixXd beta(p + 1, nlambda);
     VectorXd lossvec(nlambda);
 
     IntegerVector niter(nlambda);

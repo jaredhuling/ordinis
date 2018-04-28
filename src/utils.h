@@ -17,6 +17,8 @@ using Eigen::ArrayXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
+typedef Eigen::SparseVector<double> SparseVector;
+
 double threshold(double num);
 
 VectorXd cumsum(const VectorXd& x);
@@ -25,6 +27,10 @@ VectorXd cumsumrev(const VectorXd& x);
 
 
 bool stopRule(const VectorXd& cur, const VectorXd& prev, const double& tolerance);
+
+bool stopRule(const SparseVector& cur, const SparseVector& prev, const double& tolerance);
+
+bool stopRule(SparseVector& cur, SparseVector& prev, const double& tolerance);
 
 
 
