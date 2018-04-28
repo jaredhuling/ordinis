@@ -63,7 +63,7 @@ lasso <- function(x,
                   intercept        = TRUE,
                   standardize      = TRUE,
                   maxit            = 1500L,
-                  tol              = 1e-5
+                  tol              = 1e-4
 )
 {
 
