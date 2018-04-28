@@ -51,12 +51,14 @@ List coord_lasso(Rcpp::NumericMatrix x_,
 
     MatrixXd datX(n, p);
     VectorXd datY(n);
+    VectorXd weights(n);
 
     // Copy data and convert type from double to float
     std::copy(x_.begin(), x_.end(), datX.data());
     std::copy(y_.begin(), y_.end(), datY.data());
+    std::copy(weights_.begin(), weights_.end(), weights.data());
 
-    const Map<VectorXd>  weights(as<Map<VectorXd> >(weights_));
+    //Map<VectorXd>  weights(as<Map<VectorXd> >(weights_));
 
     // In glmnet, we minimize
     //   1/(2n) * ||y - X * beta||^2 + lambda * ||beta||_1
@@ -75,17 +77,17 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     const bool intercept   = intercept_;
 
     DataStd<double> datstd(n, p, standardize, intercept);
-    datstd.standardize(datX, datY);
+    datstd.standardize(datX, datY, weights);
 
 
     CoordLasso *solver;
-    solver = new CoordLasso(datX, datY, penalty_factor, tol);
+    solver = new CoordLasso(datX, datY, weights, penalty_factor, tol);
 
 
     if (nlambda < 1)
     {
         double lmax = 0.0;
-        lmax = solver->get_lambda_zero() / n * datstd.get_scaleY();
+        lmax = solver->get_lambda_zero() / double(n) * datstd.get_scaleY();
 
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
@@ -108,7 +110,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
-        ilambda = lambda[i] * n / datstd.get_scaleY();
+        ilambda = lambda[i] * double(n) / datstd.get_scaleY();
 
         if(i == 0)
             solver->init(ilambda);

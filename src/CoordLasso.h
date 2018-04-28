@@ -36,6 +36,7 @@ protected:
 
     MapMat datX;                  // data matrix
     MapVec datY;                  // response vector
+    MapVec weights;               // weight vector
 
     Scalar lambda;                // L1 penalty
 
@@ -264,17 +265,19 @@ protected:
 public:
     CoordLasso(ConstGenericMatrix &datX_,
                ConstGenericVector &datY_,
+               ConstGenericVector &weights_,
                ArrayXd &penalty_factor_,
                double tol_ = 1e-6) :
     CoordBase<Eigen::VectorXd>
                 (datX_.rows(), datX_.cols(), tol_),
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
                                datY(datY_.data(), datY_.size()),
+                               weights(weights_.data(), weights_.size()),
                                resid_cur(datY_),  //assumes we start our beta estimate at 0
                                penalty_factor(penalty_factor_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * datY),
-                               Xsq(datX.array().square().colwise().sum()),
+                               Xsq((datX).array().square().colwise().sum()),
                                lambda0(XY.cwiseAbs().maxCoeff())
     {}
 
