@@ -300,7 +300,7 @@ public:
             lambda0 = XY.cwiseAbs().maxCoeff();
         }
 
-        lambda0 /= 0.8111308; //std::pow(1e-9, 1.0/(99.0));
+        lambda0 /= 0.869749; //std::pow(1e-6, 1.0/(99.0));
 
 
         return lambda0;

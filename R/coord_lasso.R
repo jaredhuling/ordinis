@@ -2,7 +2,7 @@
 
 #' Fitting Lasso-penalized Using the Coordinate Descent Algorithm
 #'
-#' @description twin provides estimation of linear models with the TWIN penalty
+#' @description twin provides estimation of linear models with the lasso penalty
 #'
 #'
 #' @param x The design matrix
@@ -17,6 +17,7 @@
 #'                      \code{nlambda} values equally spaced in the log scale.
 #'                      It is recommended to set this parameter to be \code{NULL}
 #'                      (the default).
+#' @param gamma parameter for MCP/SCAD (not used yet)
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s
 #' @param nlambda Number of values in the \eqn{\lambda} sequence. Only used
@@ -54,6 +55,7 @@ lasso <- function(x,
                   y,
                   weights = rep(1, NROW(y)),
                   lambda           = numeric(0),
+                  gamma            = 3.7,
                   penalty.factor,
                   nlambda          = 100L,
                   lambda.min.ratio = NULL,
@@ -149,6 +151,8 @@ lasso <- function(x,
     maxit       <- as.integer(maxit[1])
     tol         <- as.numeric(tol[1])
 
+    gamma       <- as.double(gamma[1])
+
     if (family == "gaussian")
     {
         res <- coord_lasso_cpp(x,
@@ -161,7 +165,8 @@ lasso <- function(x,
                                standardize,
                                intercept,
                                list(maxit       = maxit,
-                                    tol         = tol)
+                                    tol         = tol,
+                                    gamma       = gamma)
         )
         res$beta   <- res$beta[, 1:res$last, drop = FALSE]
 
@@ -200,7 +205,7 @@ lasso <- function(x,
 
 #' CV Fitting for A Lasso Model Using the Coordinate Descent Algorithm
 #'
-#' @description Cross validation for linear models with the TWIN penalty
+#' @description Cross validation for linear models with the lasso penalty
 #'
 #' where \eqn{n} is the sample size and \eqn{\lambda} is a tuning
 #' parameter that controls the sparsity of \eqn{\beta}.
@@ -216,7 +221,7 @@ lasso <- function(x,
 #'                      \code{nlambda} values equally spaced in the log scale.
 #'                      It is recommended to set this parameter to be \code{NULL}
 #'                      (the default).
-#' @param gamma bandwidth for two mountains penalty
+#' @param gamma bandwidth for MCP/SCAD
 #' @param type.measure measure to evaluate for cross-validation. The default is \code{type.measure = "deviance"},
 #' which uses squared-error for gaussian models (a.k.a \code{type.measure = "mse"} there), deviance for logistic
 #' regression. \code{type.measure = "class"} applies to binomial only. \code{type.measure = "auc"} is for two-class logistic
@@ -232,7 +237,7 @@ lasso <- function(x,
 #' and each value of lambda for each model. This means these fits are computed with this observation and the rest of its
 #' fold omitted. The folid vector is also returned. Default is \code{keep = FALSE}
 #' @param parallel If TRUE, use parallel foreach to fit each fold. Must register parallel before hand, such as \pkg{doMC}.
-#' @param ... other parameters to be passed to \code{"twin"} function
+#' @param ... other parameters to be passed to \code{"lasso"} function
 #'
 #' @examples set.seed(123)
 #' n = 100
@@ -242,27 +247,27 @@ lasso <- function(x,
 #' y = drop(x %*% b) + rnorm(n)
 #'
 #' ## fit lasso model with 100 tuning parameter values
-#' res <- cv.twin(x, y)
+#' res <- cv.lasso(x, y)
 #'
 #'
 #' @export
-cv.twin <- function(x,
-                    y,
-                    lambda   = numeric(0),
-                    gamma    = 0.25,
-                    type.measure = c("mse", "deviance", "class", "auc", "mae"),
-                    nfolds   = 10,
-                    foldid   = NULL,
-                    grouped  = TRUE,
-                    keep     = FALSE,
-                    parallel = FALSE,
-                    ...)
+cv.lasso <- function(x,
+                     y,
+                     lambda   = numeric(0),
+                     gamma    = 3.7,
+                     type.measure = c("mse", "deviance", "class", "auc", "mae"),
+                     nfolds   = 10,
+                     foldid   = NULL,
+                     grouped  = TRUE,
+                     keep     = FALSE,
+                     parallel = FALSE,
+                     ...)
 {
     if (missing(type.measure))
         type.measure = "default"
     else type.measure = match.arg(type.measure)
     if (length(lambda) == 1 && length(lambda) < 2)
-        stop("Need more than one value of lambda for cv.twin")
+        stop("Need more than one value of lambda for cv.lasso")
     N = nrow(x)
     y = drop(y)
 
@@ -270,11 +275,11 @@ cv.twin <- function(x,
     which = match(c("type.measure", "nfolds", "foldid"), names(two.call), FALSE)
     if (any(which))
         two.call = two.call[-which]
-    two.call[[1]] = as.name("twin")
-    two.object = twin(x,
-                      y,
-                      lambda = lambda,
-                      gamma  = gamma, ...)
+    two.call[[1]] = as.name("lasso")
+    two.object = lasso(x,
+                       y,
+                       lambda = lambda,
+                       gamma  = gamma, ...)
     two.object$call = two.call
 
 
@@ -287,18 +292,18 @@ cv.twin <- function(x,
         stop("nfolds must be bigger than 3; nfolds=10 recommended")
     outlist = as.list(seq(nfolds))
     if (parallel) {
-        outlist = foreach(i = seq(nfolds), .packages = c("twin")) %dopar%
+        outlist = foreach(i = seq(nfolds), .packages = c("ordinis")) %dopar%
         {
             which = foldid == i
             if (is.matrix(y))
                 y_sub = y[!which, ]
             else y_sub = y[!which]
 
-            twin(x[!which, , drop = FALSE],
-                 y_sub,
-                 lambda = lambda,
-                 gamma  = gamma,
-                 ...)
+            lasso(x[!which, , drop = FALSE],
+                  y_sub,
+                  lambda = lambda,
+                  gamma  = gamma,
+                  ...)
         }
     }
     else {
@@ -308,10 +313,10 @@ cv.twin <- function(x,
                 y_sub = y[!which, ]
             else y_sub = y[!which]
 
-            outlist[[i]] = twin(x[!which, , drop = FALSE],
-                                y_sub,
-                                lambda = lambda,
-                                gamma  = gamma, ...)
+            outlist[[i]] = lasso(x[!which, , drop = FALSE],
+                                 y_sub,
+                                 lambda = lambda,
+                                 gamma  = gamma, ...)
         }
     }
 
@@ -350,19 +355,19 @@ cv.twin <- function(x,
     cvsd    <- cvstuff$cvsd
     cvname  <- cvstuff$name
 
-    out <- list(lambda   = two.object$lambda,
-                cvm      = cvm,
-                cvsd     = cvsd,
-                cvup     = cvm + cvsd,
-                cvlo     = cvm - cvsd,
-                name     = cvname,
-                nzero    = nz,
-                twin.fit = two.object)
+    out <- list(lambda    = two.object$lambda,
+                cvm       = cvm,
+                cvsd      = cvsd,
+                cvup      = cvm + cvsd,
+                cvlo      = cvm - cvsd,
+                name      = cvname,
+                nzero     = nz,
+                lasso.fit = two.object)
     if(keep)out=c(out,list(fit.preval=cvstuff$fit.preval,foldid=foldid))
     lamin=if(type.measure=="auc")getmin(two.object$lambda,-cvm,cvsd)
     else getmin(two.object$lambda,cvm,cvsd)
     obj=c(out,as.list(lamin))
-    class(obj)="cv.twin"
+    class(obj)="cv.lasso"
     obj
 
 }

@@ -4,10 +4,10 @@
 \alias{lasso}
 \title{Fitting Lasso-penalized Using the Coordinate Descent Algorithm}
 \usage{
-lasso(x, y, weights = rep(1, NROW(y)), lambda = numeric(0), penalty.factor,
-  nlambda = 100L, lambda.min.ratio = NULL, family = c("gaussian",
-  "binomial"), intercept = TRUE, standardize = TRUE, maxit = 1500L,
-  tol = 1e-05)
+lasso(x, y, weights = rep(1, NROW(y)), lambda = numeric(0), gamma = 3.7,
+  penalty.factor, nlambda = 100L, lambda.min.ratio = NULL,
+  family = c("gaussian", "binomial"), intercept = TRUE,
+  standardize = TRUE, maxit = 1500L, tol = 1e-05)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -25,6 +25,8 @@ which starts from \eqn{\lambda_0} (with this
 \code{nlambda} values equally spaced in the log scale.
 It is recommended to set this parameter to be \code{NULL}
 (the default).}
+
+\item{gamma}{parameter for MCP/SCAD (not used yet)}
 
 \item{penalty.factor}{a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 it is a vector of 1s}
@@ -55,7 +57,7 @@ are always returned on the original scale.}
 \item{tol}{convergence tolerance parameter.}
 }
 \description{
-twin provides estimation of linear models with the TWIN penalty
+twin provides estimation of linear models with the lasso penalty
 }
 \examples{
 set.seed(123)
