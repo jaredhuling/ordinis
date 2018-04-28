@@ -46,7 +46,7 @@ protected:
     ArrayXd penalty_factor;       // penalty multiplication factors
     int penalty_factor_size;
 
-    Vector XY;                    // X'Y
+    VectorXd XY;                    // X'Y
     MatrixXd Xsq;                 // colSums(X^2)
 
     Scalar lambda0;               // minimum lambda to make coefficients all zero
@@ -277,11 +277,34 @@ public:
                                penalty_factor(penalty_factor_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * datY),
-                               Xsq((datX).array().square().colwise().sum()),
-                               lambda0(XY.cwiseAbs().maxCoeff())
+                               Xsq((datX).array().square().colwise().sum())
     {}
 
-    double get_lambda_zero() const { return lambda0; }
+    double get_lambda_zero()
+    {
+        if (penalty_factor_size > 0)
+        {
+
+            lambda0 = 0;
+            for (int i = 0; i < penalty_factor.size(); ++i)
+            {
+                if (penalty_factor(i) != 0.0)
+                {
+                    double valcur = std::abs(XY(i)) / penalty_factor(i);
+
+                    if (valcur > lambda0) lambda0 = valcur;
+                }
+            }
+        } else
+        {
+            lambda0 = XY.cwiseAbs().maxCoeff();
+        }
+
+        lambda0 /= 0.8111308; //std::pow(1e-9, 1.0/(99.0));
+
+
+        return lambda0;
+    }
 
     // init() is a cold start for the first lambda
     void init(double lambda_)
