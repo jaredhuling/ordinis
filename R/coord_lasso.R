@@ -20,6 +20,8 @@
 #' @param gamma parameter for MCP/SCAD (not used yet)
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s
+#' @param upper.limits
+#' @param lower.limits
 #' @param nlambda Number of values in the \eqn{\lambda} sequence. Only used
 #'                       when the program calculates its own \eqn{\lambda}
 #'                       (by setting \code{lambda = NULL}).
@@ -57,6 +59,8 @@ lasso <- function(x,
                   lambda           = numeric(0),
                   gamma            = 3.7,
                   penalty.factor,
+                  upper.limits     = rep(Inf, NCOL(x)),
+                  lower.limits     = rep(-Inf, NCOL(x)),
                   nlambda          = 100L,
                   lambda.min.ratio = NULL,
                   family           = c("gaussian", "binomial"),
@@ -71,7 +75,7 @@ lasso <- function(x,
     y <- as.numeric(y)
 
     n <- nrow(x)
-    p <- ncol(x)
+    p <- nvars <- ncol(x)
 
     intercept    <- as.logical(intercept)
     standardize  <- as.logical(standardize)
@@ -85,6 +89,26 @@ lasso <- function(x,
         {
             vnames <- paste0("V", 1:p)
         }
+    }
+
+    ## taken from glmnet
+    if(any(lower.limits>0)) { stop("Lower limits should be non-positive") }
+    if(any(upper.limits<0)) { stop("Upper limits should be non-negative") }
+    lower.limits[lower.limits == -Inf] <- -1e99
+    upper.limits[upper.limits == Inf]  <- 1e99
+    if(length(lower.limits) < nvars)
+    {
+        if(length(lower.limits)==1) lower.limits <- rep(lower.limits, nvars) else stop("Require length 1 or nvars lower.limits")
+    } else
+    {
+        lower.limits <- lower.limits[seq(nvars)]
+    }
+    if(length(upper.limits) < nvars)
+    {
+        if(length(upper.limits)==1) upper.limits <- rep(upper.limits, nvars) else stop("Require length 1 or nvars upper.limits")
+    } else
+    {
+        upper.limits <- upper.limits[seq(nvars)]
     }
 
     if (n != NROW(y))
@@ -160,6 +184,7 @@ lasso <- function(x,
                                weights,
                                lambda,
                                penalty.factor,
+                               rbind(upper.limits, lower.limits),
                                nlambda,
                                lambda.min.ratio,
                                standardize,

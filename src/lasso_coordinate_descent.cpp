@@ -39,6 +39,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
                  Rcpp::NumericVector weights_,
                  Rcpp::NumericVector lambda_,
                  Rcpp::NumericVector penalty_factor_,
+                 Rcpp::NumericMatrix limits_,
                  int    nlambda_,
                  double lmin_ratio_,
                  bool   standardize_,
@@ -52,11 +53,14 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     MatrixXd datX(n, p);
     VectorXd datY(n);
     VectorXd weights(n);
+    MatrixXd limits(2, p);
 
     // Copy data and convert type from double to float
     std::copy(x_.begin(), x_.end(), datX.data());
     std::copy(y_.begin(), y_.end(), datY.data());
     std::copy(weights_.begin(), weights_.end(), weights.data());
+
+    std::copy(limits_.begin(), limits_.end(), limits.data());
 
     //Map<VectorXd>  weights(as<Map<VectorXd> >(weights_));
 
@@ -81,7 +85,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
 
 
     CoordLasso *solver;
-    solver = new CoordLasso(datX, datY, weights, penalty_factor, tol);
+    solver = new CoordLasso(datX, datY, weights, penalty_factor, limits, tol);
 
 
     if (nlambda < 1)
@@ -152,6 +156,7 @@ List coord_lasso_cpp(Rcpp::NumericMatrix x,
                      Rcpp::NumericVector weights,
                      Rcpp::NumericVector lambda,
                      Rcpp::NumericVector penalty_factor,
+                     Rcpp::NumericMatrix limits,
                      int nlambda,
                      double lmin_ratio,
                      bool standardize,
@@ -159,6 +164,7 @@ List coord_lasso_cpp(Rcpp::NumericMatrix x,
                      List opts)
 {
     return coord_lasso(x, y, weights, lambda, penalty_factor,
+                       limits,
                        nlambda,
                        lmin_ratio,
                        standardize,

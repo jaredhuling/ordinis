@@ -44,6 +44,7 @@ protected:
     VectorXd resid_cur;
 
     ArrayXd penalty_factor;       // penalty multiplication factors
+    MapMat limits;
     int penalty_factor_size;
 
     VectorXd XY;                    // X'Y
@@ -118,6 +119,10 @@ protected:
 
                 threshval = soft_threshold(grad, lambda / Xsq(j));
 
+                //  apply param limits
+                if (threshval < limits(1,j)) threshval = limits(1,j);
+                if (threshval > limits(0,j)) threshval = limits(0,j);
+
                 // update residual if the coefficient changes after
                 // thresholding.
                 if (beta_prev != threshval)
@@ -140,6 +145,10 @@ protected:
                 grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
 
                 threshval = soft_threshold(grad, penalty_factor(j) * lambda / Xsq(j));
+
+                //  apply param limits
+                if (threshval < limits(1,j)) threshval = limits(1,j);
+                if (threshval > limits(0,j)) threshval = limits(0,j);
 
                 // update residual if the coefficient changes after
                 // thresholding.
@@ -177,6 +186,10 @@ protected:
 
                     threshval = soft_threshold(grad, lambda / Xsq(j));
 
+                    //  apply param limits
+                    if (threshval < limits(1,j)) threshval = limits(1,j);
+                    if (threshval > limits(0,j)) threshval = limits(0,j);
+
                     // update residual if the coefficient changes after
                     // thresholding.
                     if (beta_prev != threshval)
@@ -201,6 +214,10 @@ protected:
                     grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
 
                     threshval = soft_threshold(grad, penalty_factor(j) * lambda / Xsq(j));
+
+                    //  apply param limits
+                    if (threshval < limits(1,j)) threshval = limits(1,j);
+                    if (threshval > limits(0,j)) threshval = limits(0,j);
 
                     // update residual if the coefficient changes after
                     // thresholding.
@@ -267,6 +284,7 @@ public:
                ConstGenericVector &datY_,
                ConstGenericVector &weights_,
                ArrayXd &penalty_factor_,
+               ConstGenericMatrix &limits_,
                double tol_ = 1e-6) :
     CoordBase<Eigen::VectorXd>
                 (datX_.rows(), datX_.cols(), tol_),
@@ -275,6 +293,7 @@ public:
                                weights(weights_.data(), weights_.size()),
                                resid_cur(datY_),  //assumes we start our beta estimate at 0
                                penalty_factor(penalty_factor_),
+                               limits(limits_.data(), limits_.rows(), limits_.cols()),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * datY),
                                Xsq((datX).array().square().colwise().sum())

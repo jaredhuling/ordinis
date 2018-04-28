@@ -5,7 +5,8 @@
 \title{Fitting Lasso-penalized Using the Coordinate Descent Algorithm}
 \usage{
 lasso(x, y, weights = rep(1, NROW(y)), lambda = numeric(0), gamma = 3.7,
-  penalty.factor, nlambda = 100L, lambda.min.ratio = NULL,
+  penalty.factor, upper.limits = rep(Inf, NCOL(x)), lower.limits = rep(-Inf,
+  NCOL(x)), nlambda = 100L, lambda.min.ratio = NULL,
   family = c("gaussian", "binomial"), intercept = TRUE,
   standardize = TRUE, maxit = 1500L, tol = 1e-04)
 }
