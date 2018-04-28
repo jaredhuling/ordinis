@@ -163,6 +163,13 @@ lasso <- function(x,
                                list(maxit       = maxit,
                                     tol         = tol)
         )
+        res$beta   <- res$beta[, 1:res$last, drop = FALSE]
+
+        res$beta   <- as(res$beta, "sparseMatrix")
+
+        res$fitted <- as.matrix(cbind(1, x) %*% res$beta)
+        res$resid  <- matrix(rep(y, ncol(res$beta)), ncol = ncol(res$beta) ) - res$fitted
+        res$losses <- colSums(res$resid ^ 2)
 
     } else if (family == "binomial")
     {
@@ -171,10 +178,9 @@ lasso <- function(x,
 
     rownames(res$beta) <- c("(Intercept)", vnames)
 
-    res$beta   <- res$beta[, 1:res$last, drop = FALSE]
     res$niter  <- res$niter[1:res$last]
     res$lambda <- res$lambda[1:res$last]
-    res$losses <- res$losses[, 1:res$last, drop = FALSE]
+    #res$losses <- res$losses[, 1:res$last, drop = FALSE]
     #res$losses.iter <- res$losses.iter[, 1:res$last, drop = FALSE]
 
     res$nzero   <- colSums(res$beta[-1,,drop=FALSE] != 0)
