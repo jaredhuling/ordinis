@@ -435,6 +435,13 @@ public:
 
         int current_iter = 0;
 
+        // run once through all variables
+        current_iter++;
+        beta_prev = beta;
+        ineligible_set.fill(1);
+
+        update_beta(ineligible_set);
+
         while(current_iter < maxit)
         {
             while(current_iter < maxit)

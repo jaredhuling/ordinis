@@ -92,3 +92,45 @@ max(abs(coef(resg) - reso$beta))
 
 
 ```
+
+### Lasso (ill-conditioned)
+
+```{r, warning=FALSE, message=FALSE}
+library(MASS)
+
+set.seed(123)
+n <- 500
+p <- 1000
+m <- 50
+b <- matrix(c(runif(m, min = -1), rep(0, p - m)))
+sig <- matrix(0.5, ncol=p,nrow=p); diag(sig) <- 1
+x <- mvrnorm(n, mu=rep(0, p), Sigma = sig)
+y <- drop(x %*% b) + rnorm(n)
+
+lambdas = glmnet(x, y)$lambda[1:65]
+
+microbenchmark(
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-9,  # thresh must be very small 
+                                      lambda = lambdas)},    # for comparable precision
+    "cd[lasso]"     = {reso <- ordinis(x, y, lambda = lambdas, 
+                                       tol = 1e-5)},
+    times = 5
+)
+
+
+# difference of results
+max(abs(coef(resg) - reso$beta))
+
+microbenchmark(
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-11,  # thresh must be very low for comparable precision
+                                      lambda = lambdas)},
+    "ordinis[lasso]"     = {reso <- ordinis(x, y, lambda = lambdas, 
+                                            tol = 1e-5)},
+    times = 5
+)
+
+# difference of results
+max(abs(coef(resg) - reso$beta))
+
+
+```

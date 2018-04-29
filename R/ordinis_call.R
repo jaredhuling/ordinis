@@ -43,7 +43,7 @@
 #' @param standardize Whether to standardize the design matrix before
 #'                    fitting the model. Default is \code{TRUE}. Fitted coefficients
 #'                    are always returned on the original scale.
-#' @param maxit Maximum number of admm iterations.
+#' @param maxit Maximum number of coordinate descent iterations.
 #' @param tol convergence tolerance parameter.
 #'
 #' @examples
@@ -73,7 +73,7 @@ ordinis <- function(x,
                     family           = c("gaussian", "binomial"),
                     intercept        = TRUE,
                     standardize      = TRUE,
-                    maxit            = 1500L,
+                    maxit            = 5000L,
                     tol              = 1e-4
 )
 {
@@ -239,8 +239,8 @@ ordinis <- function(x,
     res$penalty     <- penalty
     res$standardize <- standardize
     res$intercept   <- intercept
-    res$nobs  <- n
-    res$nvars <- p
+    res$nobs        <- n
+    res$nvars       <- p
 
     class2 <- switch(family,
                      "gaussian" = "cdgaussian",
