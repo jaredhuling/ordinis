@@ -38,13 +38,14 @@ protected:
     MapVec datY;                  // response vector
     MapVec weights;               // weight vector
 
-    Scalar lambda;                // L1 penalty
+    Scalar lambda, lambda_ridge;  // L1 penalty
 
     double threshval;
     VectorXd resid_cur;
 
     ArrayXd penalty_factor;       // penalty multiplication factors
     MapMat limits;
+    double alpha;
     int penalty_factor_size;
 
     VectorXd XY;                    // X'Y
@@ -115,9 +116,9 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta( j ); //beta(j);
-                grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
+                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = soft_threshold(grad, lambda / Xsq(j));
+                threshval = soft_threshold(grad, lambda) / (Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -142,9 +143,9 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta( j ); //beta(j);
-                grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
+                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = soft_threshold(grad, penalty_factor(j) * lambda / Xsq(j));
+                threshval = soft_threshold(grad, penalty_factor(j) * lambda) / (Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -182,9 +183,9 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
+                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j) ;
 
-                    threshval = soft_threshold(grad, lambda / Xsq(j));
+                    threshval = soft_threshold(grad, lambda) / (Xsq(j) + lambda_ridge) ;
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -211,9 +212,9 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur) / Xsq(j) + beta_prev;
+                    grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
 
-                    threshval = soft_threshold(grad, penalty_factor(j) * lambda / Xsq(j));
+                    threshval = soft_threshold(grad, penalty_factor(j) * lambda) / (Xsq(j) + lambda_ridge) ;
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -285,6 +286,7 @@ public:
                ConstGenericVector &weights_,
                ArrayXd &penalty_factor_,
                ConstGenericMatrix &limits_,
+               double alpha_ = 1.0,
                double tol_ = 1e-6) :
     CoordBase<Eigen::VectorXd>
                 (datX_.rows(), datX_.cols(), tol_),
@@ -294,6 +296,7 @@ public:
                                resid_cur(datY_),  //assumes we start our beta estimate at 0
                                penalty_factor(penalty_factor_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
+                               alpha(alpha_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * datY),
                                Xsq((datX).array().square().colwise().sum())
@@ -319,7 +322,7 @@ public:
             lambda0 = XY.cwiseAbs().maxCoeff();
         }
 
-        lambda0 /= 0.869749; //std::pow(1e-6, 1.0/(99.0));
+        lambda0 /= ( alpha * 0.869749 ); //std::pow(1e-6, 1.0/(99.0));
 
 
         return lambda0;
@@ -332,7 +335,8 @@ public:
         beta.setZero();
 
 
-        lambda = lambda_;
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
 
         eligible_set.setZero();
 
@@ -358,8 +362,9 @@ public:
     // current main_x, aux_z, dual_y and rho as initial values
     void init_warm(double lambda_)
     {
-        lprev  = lambda;
-        lambda = lambda_;
+        lprev        = lambda;
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
 
         eligible_set.setZero();
 

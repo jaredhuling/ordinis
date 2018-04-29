@@ -528,3 +528,57 @@ plot.cv.lasso <- function(x, sign.lambda = 1, ...)
 }
 
 
+
+#' log likelihood function for fitted lasso objects
+#'
+#' @param object fitted "lasso" model object.
+#' @param ... not used
+#' @rdname logLik
+#' @export
+#' @examples
+#' set.seed(123)
+#' n.obs <- 200
+#' n.vars <- 500
+#'
+#' true.beta <- c(runif(15, -0.25, 0.25), rep(0, n.vars - 15))
+#' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
+#' y <- rnorm(n.obs, sd = 3) + x %*% true.beta
+#'
+#' fit <- lasso(x = x, y = y)
+#'
+#' logLik(fit)
+#'
+#'
+logLik.lasso <- function(object, REML = FALSE, ...) {
+    # taken from ncvreg. Thanks to Patrick Breheny.
+    n  <- as.numeric(object$nobs)
+    df <- object$nzero + object$intercept
+
+    if (object$family == "gaussian")
+    {
+        if (REML)
+        {
+            rdf <- n - df
+        } else
+        {
+            rdf <- n
+        }
+
+        resid.ss <- object$loss
+        logL <- -0.5 * n * (log(2 * pi) - log(rdf) + log(resid.ss)) - 0.5 * rdf
+    } else if (object$family == "binomial")
+    {
+        logL <- -1 * object$loss
+    } else if (object$family == "poisson")
+    {
+        stop("poisson not complete yet")
+        #y <- object$y
+        #ind <- y != 0
+        #logL <- -object$loss + sum(y[ind] * log(y[ind])) - sum(y) - sum(lfactorial(y))
+    } else if (object$family == "coxph")
+    {
+        logL <- -1e99
+    }
+
+    logL
+}

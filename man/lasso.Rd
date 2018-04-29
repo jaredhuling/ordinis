@@ -4,11 +4,11 @@
 \alias{lasso}
 \title{Fitting Lasso-penalized Using the Coordinate Descent Algorithm}
 \usage{
-lasso(x, y, weights = rep(1, NROW(y)), lambda = numeric(0), gamma = 3.7,
-  penalty.factor, upper.limits = rep(Inf, NCOL(x)), lower.limits = rep(-Inf,
-  NCOL(x)), nlambda = 100L, lambda.min.ratio = NULL,
-  family = c("gaussian", "binomial"), intercept = TRUE,
-  standardize = TRUE, maxit = 1500L, tol = 1e-04)
+lasso(x, y, weights = rep(1, NROW(y)), lambda = numeric(0), alpha = 1,
+  gamma = 3.7, penalty.factor, upper.limits = rep(Inf, NCOL(x)),
+  lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
+  lambda.min.ratio = NULL, family = c("gaussian", "binomial"),
+  intercept = TRUE, standardize = TRUE, maxit = 1500L, tol = 1e-04)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -26,6 +26,8 @@ which starts from \eqn{\lambda_0} (with this
 \code{nlambda} values equally spaced in the log scale.
 It is recommended to set this parameter to be \code{NULL}
 (the default).}
+
+\item{alpha}{mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge}
 
 \item{gamma}{parameter for MCP/SCAD (not used yet)}
 

@@ -17,6 +17,7 @@
 #'                      \code{nlambda} values equally spaced in the log scale.
 #'                      It is recommended to set this parameter to be \code{NULL}
 #'                      (the default).
+#' @param alpha mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge
 #' @param gamma parameter for MCP/SCAD (not used yet)
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s
@@ -57,6 +58,7 @@ lasso <- function(x,
                   y,
                   weights = rep(1, NROW(y)),
                   lambda           = numeric(0),
+                  alpha            = 1,
                   gamma            = 3.7,
                   penalty.factor,
                   upper.limits     = rep(Inf, NCOL(x)),
@@ -162,6 +164,8 @@ lasso <- function(x,
     nlambda          <- as.integer(nlambda[1])
     lambda.min.ratio <- lmr_val
 
+    if (alpha > 1 | alpha < 0) stop("alpha must be between 0 and 1")
+
 
     if(maxit <= 0)
     {
@@ -174,7 +178,7 @@ lasso <- function(x,
 
     maxit       <- as.integer(maxit[1])
     tol         <- as.numeric(tol[1])
-
+    alpha       <- as.double(alpha[1])
     gamma       <- as.double(gamma[1])
 
     if (family == "gaussian")
@@ -191,6 +195,7 @@ lasso <- function(x,
                                intercept,
                                list(maxit       = maxit,
                                     tol         = tol,
+                                    alpha       = alpha,
                                     gamma       = gamma)
         )
         res$beta   <- res$beta[, 1:res$last, drop = FALSE]
@@ -199,7 +204,7 @@ lasso <- function(x,
 
         res$fitted <- as.matrix(cbind(1, x) %*% res$beta)
         res$resid  <- matrix(rep(y, ncol(res$beta)), ncol = ncol(res$beta) ) - res$fitted
-        res$losses <- colSums(res$resid ^ 2)
+        res$loss   <- colSums(res$resid ^ 2)
 
     } else if (family == "binomial")
     {
@@ -216,6 +221,10 @@ lasso <- function(x,
     res$nzero   <- colSums(res$beta[-1,,drop=FALSE] != 0)
 
 
+    res$standardize <- standardize
+    res$intercept   <- intercept
+    res$nobs  <- n
+    res$nvars <- p
 
     class2 <- switch(family,
                      "gaussian" = "cdgaussian",

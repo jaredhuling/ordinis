@@ -77,6 +77,8 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     List opts(opts_);
     const int maxit        = as<int>(opts["maxit"]);
     const double tol       = as<double>(opts["tol"]);
+    const double alpha     = as<double>(opts["alpha"]);
+    const double gamma     = as<double>(opts["gamma"]);
     const bool standardize = standardize_;
     const bool intercept   = intercept_;
 
@@ -85,8 +87,7 @@ List coord_lasso(Rcpp::NumericMatrix x_,
 
 
     CoordLasso *solver;
-    solver = new CoordLasso(datX, datY, weights, penalty_factor, limits, tol);
-
+    solver = new CoordLasso(datX, datY, weights, penalty_factor, limits, alpha, tol);
 
     if (nlambda < 1)
     {
