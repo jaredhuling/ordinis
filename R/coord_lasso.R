@@ -23,8 +23,10 @@
 #' @param gamma parameter for MCP/SCAD (not used yet)
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s
-#' @param upper.limits
-#' @param lower.limits
+#' @param upper.limits a vector of length \code{ncol(x)} of upper limits for each coefficient. Can be a single value, which will
+#' then be applied for each coefficient. Must be non-negative.
+#' @param lower.limits a vector of length \code{ncol(x)} of lower limits for each coefficient. Can be a single value, which will
+#' then be applied for each coefficient. Cannot be greater than 0.
 #' @param nlambda Number of values in the \eqn{\lambda} sequence. Only used
 #'                       when the program calculates its own \eqn{\lambda}
 #'                       (by setting \code{lambda = NULL}).
@@ -59,7 +61,7 @@
 ordinis <- function(x,
                     y,
                     weights          = rep(1, NROW(y)),
-                    penalty          = c("lasso", "MCP", "SCAD"),
+                    penalty          = c("lasso", "mcp", "scad"),
                     lambda           = numeric(0),
                     alpha            = 1,
                     gamma            = 3.7,
