@@ -306,7 +306,7 @@ cv.cdgaussian <- function(outlist,lambda,x,y,foldid,type.measure,grouped,keep=FA
 #' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 #' y <- rnorm(n.obs, sd = 2) + x %*% true.beta
 #'
-#' fit <- ordinis(x = x, y = y, penalty = c("double.quadratic"))
+#' fit <- ordinis(x = x, y = y, penalty = c("mcp"))
 #'
 #' plot(fit)
 #'
@@ -454,7 +454,7 @@ plot.ordinis <- function(x,
 #' y.test <- rnorm(n.obs.test, sd = 3) + x.test %*% true.beta
 #'
 #' fit <- cv.ordinis(x = x, y = y,
-#'                   gamma = 0.1,
+#'                   gamma = 1.4,
 #'                   nlambda = 10)
 #'
 #'
@@ -494,7 +494,7 @@ predict.cv.ordinis <- function(object, newx,
 #' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 #' y <- rnorm(n.obs, sd = 3) + x %*% true.beta
 #'
-#' fit <- cv.ordinis(x = x, y = y, gamma = 0.1)
+#' fit <- cv.ordinis(x = x, y = y, gamma = 1.4)
 #'
 #' plot(fit)
 #'

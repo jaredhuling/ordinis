@@ -21,7 +21,7 @@ or by cloning and building
 
 ## Example
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, fig.path="vignettes/"}
 library(ordinis)
 
 # compute the full solution path, n > p

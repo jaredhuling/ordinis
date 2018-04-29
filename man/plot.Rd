@@ -48,7 +48,7 @@ true.beta <- c(runif(5, 0.1, 1) * (2 * rbinom(5, 1, 0.5) - 1), rep(0, n.vars - 5
 x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 y <- rnorm(n.obs, sd = 2) + x \%*\% true.beta
 
-fit <- ordinis(x = x, y = y, penalty = c("double.quadratic"))
+fit <- ordinis(x = x, y = y, penalty = c("mcp"))
 
 plot(fit)
 
@@ -61,7 +61,7 @@ true.beta <- c(runif(15, -0.5, 0.5), rep(0, n.vars - 15))
 x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 y <- rnorm(n.obs, sd = 3) + x \%*\% true.beta
 
-fit <- cv.ordinis(x = x, y = y, gamma = 0.1)
+fit <- cv.ordinis(x = x, y = y, gamma = 1.4)
 
 plot(fit)
 

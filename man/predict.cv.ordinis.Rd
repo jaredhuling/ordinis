@@ -39,7 +39,7 @@ x.test <- matrix(rnorm(n.obs.test * n.vars), n.obs.test, n.vars)
 y.test <- rnorm(n.obs.test, sd = 3) + x.test \%*\% true.beta
 
 fit <- cv.ordinis(x = x, y = y,
-                  gamma = 0.1,
+                  gamma = 1.4,
                   nlambda = 10)
 
 

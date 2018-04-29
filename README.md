@@ -31,7 +31,7 @@ mod <- ordinis(x, y,
 plot(mod)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+![](vignettes/unnamed-chunk-1-1.png)<!-- -->
 
 ``` r
 ## show likelihood
@@ -107,8 +107,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##           expr      min       lq     mean   median       uq      max neval
-    ##  glmnet[lasso] 136.4369 138.7678 180.3546 139.0498 146.7266 340.7919     5
-    ##      cd[lasso] 133.1576 141.3705 151.1986 142.7120 147.4971 191.2558     5
+    ##  glmnet[lasso] 137.3272 137.4688 186.9694 141.8872 151.7692 366.3948     5
+    ##      cd[lasso] 139.3156 141.1347 153.4401 148.9580 152.0021 185.7902     5
 
 ``` r
 # difference of results
@@ -129,8 +129,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 280.6097 285.6335 294.3236 288.0759 293.6548 323.6440
-    ##  ordinis[lasso] 137.4274 143.8471 164.0447 152.1963 173.3827 213.3702
+    ##   glmnet[lasso] 287.2586 287.6215 303.7856 289.1748 294.3163 360.5567
+    ##  ordinis[lasso] 136.3948 136.6342 149.1672 136.9235 142.4321 193.4513
     ##  neval
     ##      5
     ##      5
