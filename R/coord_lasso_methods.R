@@ -428,17 +428,17 @@ plot.lasso <- function(x,
 }
 
 
-#' Prediction function for fitted cross validation twin objects
+#' Prediction function for fitted cross validation lasso objects
 #'
-#' @param object fitted \code{"cv.twin"} model object
+#' @param object fitted \code{"cv.lasso"} model object
 #' @param newx Matrix of new values for \code{x} at which predictions are to be made. Must be a matrix; can be sparse as in the
 #' \code{CsparseMatrix} objects of the \pkg{Matrix} package
 #' This argument is not used for \code{type = c("coefficients","nonzero")}
 #' @param s Value(s) of the penalty parameter lambda at which predictions are required. Default is the entire sequence used to create
-#' the model. For \code{predict.cv.twin()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation
-#' @param ... used to pass the other arguments for predict.twin
+#' the model. For \code{predict.cv.lasso()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation
+#' @param ... used to pass the other arguments for predict.lasso
 #' @return An object depending on the type argument
-#' @method predict cv.twin
+#' @method predict cv.lasso
 #' @export
 #' @examples
 #' set.seed(123)
@@ -473,7 +473,7 @@ predict.cv.lasso <- function(object, newx,
         }
 
     else stop("Invalid form for s")
-    predict(object$twin.fit, newx, s=lambda, ...)
+    predict(object$lasso.fit, newx, s=lambda, ...)
 }
 
 

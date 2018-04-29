@@ -60,7 +60,7 @@ are always returned on the original scale.}
 \item{tol}{convergence tolerance parameter.}
 }
 \description{
-twin provides estimation of linear models with the lasso penalty
+lasso provides estimation of linear models with the lasso penalty
 }
 \examples{
 set.seed(123)

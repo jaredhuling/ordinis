@@ -2,7 +2,7 @@
 
 #' Fitting Lasso-penalized Using the Coordinate Descent Algorithm
 #'
-#' @description twin provides estimation of linear models with the lasso penalty
+#' @description lasso provides estimation of linear models with the lasso penalty
 #'
 #'
 #' @param x The design matrix
@@ -180,6 +180,8 @@ lasso <- function(x,
     tol         <- as.numeric(tol[1])
     alpha       <- as.double(alpha[1])
     gamma       <- as.double(gamma[1])
+
+    if (gamma <= 1) stop("gamma must be greater than 1")
 
     if (family == "gaussian")
     {

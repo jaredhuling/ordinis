@@ -118,9 +118,9 @@ List coord_lasso(Rcpp::NumericMatrix x_,
         ilambda = lambda[i] * double(n) / datstd.get_scaleY();
 
         if(i == 0)
-            solver->init(ilambda);
+            solver->init(ilambda, gamma);
         else
-            solver->init_warm(ilambda);
+            solver->init_warm(ilambda, gamma);
 
         niter[i] = solver->solve(maxit);
         VectorXd res = solver->get_beta();

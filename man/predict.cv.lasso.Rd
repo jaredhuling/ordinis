@@ -2,28 +2,28 @@
 % Please edit documentation in R/coord_lasso_methods.R
 \name{predict.cv.lasso}
 \alias{predict.cv.lasso}
-\title{Prediction function for fitted cross validation twin objects}
+\title{Prediction function for fitted cross validation lasso objects}
 \usage{
-\method{predict}{cv.twin}(object, newx, s = c("lambda.min", "lambda.1se"),
+\method{predict}{cv.lasso}(object, newx, s = c("lambda.min", "lambda.1se"),
   ...)
 }
 \arguments{
-\item{object}{fitted \code{"cv.twin"} model object}
+\item{object}{fitted \code{"cv.lasso"} model object}
 
 \item{newx}{Matrix of new values for \code{x} at which predictions are to be made. Must be a matrix; can be sparse as in the
 \code{CsparseMatrix} objects of the \pkg{Matrix} package
 This argument is not used for \code{type = c("coefficients","nonzero")}}
 
 \item{s}{Value(s) of the penalty parameter lambda at which predictions are required. Default is the entire sequence used to create
-the model. For \code{predict.cv.twin()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation}
+the model. For \code{predict.cv.lasso()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation}
 
-\item{...}{used to pass the other arguments for predict.twin}
+\item{...}{used to pass the other arguments for predict.lasso}
 }
 \value{
 An object depending on the type argument
 }
 \description{
-Prediction function for fitted cross validation twin objects
+Prediction function for fitted cross validation lasso objects
 }
 \examples{
 set.seed(123)

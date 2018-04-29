@@ -38,7 +38,7 @@ protected:
     MapVec datY;                  // response vector
     MapVec weights;               // weight vector
 
-    Scalar lambda, lambda_ridge;  // L1 penalty
+    Scalar lambda, lambda_ridge, gamma;  // L1 penalty
 
     double threshval;
     VectorXd resid_cur;
@@ -54,6 +54,11 @@ protected:
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
     double lprev;
+
+    // pointer we will set to one of the thresholding functions
+    typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &denom);
+
+    thresh_func_ptr thresh_func;
 
     /*
     static void soft_threshold(SparseVector &res, const Vector &vec, const double &penalty)
@@ -92,14 +97,33 @@ protected:
         return (sum_squares + penalty_part);
     }
 
-    static double soft_threshold(double &value, const double &penalty)
+    static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
     {
         if(value > penalty)
-            return(value - penalty);
+            return( (value - penalty) / denom );
         else if(value < -penalty)
-            return(value + penalty);
+            return( (value + penalty) / denom );
         else
             return(0);
+    }
+
+    static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
+    {
+        if (std::abs(value) > gamma * penalty * denom)
+            return(value / denom);
+        else if(value > penalty)
+            return((value - penalty) / (denom - 1.0 / gamma) );
+        else if(value < -penalty)
+            return((value + penalty) / (denom - 1.0 / gamma));
+        else
+            return(0);
+    }
+
+
+    void set_threshold_func()
+    {
+        thresh_func = &CoordLasso::soft_threshold;
+        //thresh_func = &CoordLasso::mcp_threshold;
     }
 
     //void next_beta(Vector &res, VectorXi &eligible)
@@ -118,7 +142,7 @@ protected:
                 double beta_prev = beta( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = soft_threshold(grad, lambda) / (Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, lambda, gamma, Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -145,7 +169,7 @@ protected:
                 double beta_prev = beta( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = soft_threshold(grad, penalty_factor(j) * lambda) / (Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -185,7 +209,7 @@ protected:
                     double beta_prev = beta( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j) ;
 
-                    threshval = soft_threshold(grad, lambda) / (Xsq(j) + lambda_ridge) ;
+                    threshval = thresh_func(grad, lambda, gamma, Xsq(j) + lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -214,7 +238,7 @@ protected:
                     double beta_prev = beta( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
 
-                    threshval = soft_threshold(grad, penalty_factor(j) * lambda) / (Xsq(j) + lambda_ridge) ;
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, Xsq(j) + lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -329,14 +353,17 @@ public:
     }
 
     // init() is a cold start for the first lambda
-    void init(double lambda_)
+    void init(double lambda_, double gamma_)
     {
+
+        set_threshold_func();
 
         beta.setZero();
 
-
         lambda       = lambda_ * alpha;
         lambda_ridge = lambda_ * (1.0 - alpha);
+
+        gamma        = gamma_;
 
         eligible_set.setZero();
 
@@ -360,11 +387,13 @@ public:
     }
     // when computing for the next lambda, we can use the
     // current main_x, aux_z, dual_y and rho as initial values
-    void init_warm(double lambda_)
+    void init_warm(double lambda_, double gamma_)
     {
         lprev        = lambda;
         lambda       = lambda_ * alpha;
         lambda_ridge = lambda_ * (1.0 - alpha);
+
+        gamma        = gamma_;
 
         eligible_set.setZero();
 
