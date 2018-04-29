@@ -1,0 +1,89 @@
+---
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(message = FALSE)
+```
+
+
+## Introduction to `ordinis'
+
+Install using the **devtools** package:
+
+```r
+devtools::install_github("jaredhuling/ordinis")
+```
+
+or by cloning and building 
+
+## Example
+
+```{r, warning=FALSE, message=FALSE}
+library(ordinis)
+
+# compute the full solution path, n > p
+set.seed(123)
+n <- 500
+p <- 1000
+m <- 50
+b <- matrix(c(runif(m), rep(0, p - m)))
+x <- matrix(rnorm(n * p, sd = 3), n, p)
+y <- drop(x %*% b) + rnorm(n)
+
+mod <- lasso(x, y, 
+             lower.limits = rep(0, p), # force all coefficients to be positive
+             penalty.factor = c(0, 0, rep(1, p-2)), # don't penalize first two coefficients
+             alpha = 0.5)  # use elastic net with alpha = 0.5
+
+plot(mod)
+
+## show likelihood
+logLik(mod)
+
+## compute AIC
+AIC(mod)
+
+## BIC
+BIC(mod)
+```
+
+## Performance
+
+### Lasso
+
+```{r, warning=FALSE, message=FALSE}
+library(microbenchmark)
+library(glmnet)
+
+b <- matrix(c(runif(m, min = -1), rep(0, p - m)))
+x <- matrix(rnorm(n * p, sd = 3), n, p)
+y <- drop(x %*% b) + rnorm(n)
+
+lambdas = glmnet(x, y)$lambda
+
+microbenchmark(
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very low for comparable precision
+                                      lambda = lambdas)},
+    "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
+                                        tol = 1e-5)},
+    times = 5
+)
+
+# difference of results
+max(abs(coef(resg) - reso$beta))
+
+microbenchmark(
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-15,  # thresh must be very low for comparable precision
+                                      lambda = lambdas)},
+    "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
+                                        tol = 1e-5)},
+    times = 5
+)
+
+# difference of results
+max(abs(coef(resg) - reso$beta))
+
+```

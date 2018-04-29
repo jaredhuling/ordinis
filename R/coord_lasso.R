@@ -221,6 +221,7 @@ lasso <- function(x,
     res$nzero   <- colSums(res$beta[-1,,drop=FALSE] != 0)
 
 
+    res$family      <- family
     res$standardize <- standardize
     res$intercept   <- intercept
     res$nobs  <- n

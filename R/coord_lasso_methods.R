@@ -580,5 +580,8 @@ logLik.lasso <- function(object, REML = FALSE, ...) {
         logL <- -1e99
     }
 
+    attr(logL,"df")   <- df
+    attr(logL,"nobs") <- n
+    class(logL) <- "logLik"
     logL
 }
