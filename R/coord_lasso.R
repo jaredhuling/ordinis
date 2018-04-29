@@ -85,6 +85,7 @@ ordinis <- function(x,
     intercept    <- as.logical(intercept)
     standardize  <- as.logical(standardize)
     family       <- match.arg(family)
+    penalty      <- match.arg(penalty)
 
     if (!is.null(dim(x)))
     {
