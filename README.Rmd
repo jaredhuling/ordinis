@@ -11,6 +11,8 @@ opts_chunk$set(message = FALSE)
 
 ## Introduction to `ordinis'
 
+The 'ordinis' package provides computation for penalized regression problems via coordinate descent. It is mostly for my own experimentation at this stage, however it is fairly efficient and reliable. 
+
 Install using the **devtools** package:
 
 ```r

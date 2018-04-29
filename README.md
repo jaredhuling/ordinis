@@ -1,6 +1,10 @@
 
 ## Introduction to \`ordinis’
 
+The ‘ordinis’ package provides computation for penalized regression
+problems via coordinate descent. It is mostly for my own experimentation
+at this stage, however it is fairly efficient and reliable.
+
 Install using the **devtools** package:
 
 ``` r
@@ -107,8 +111,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##           expr      min       lq     mean   median       uq      max neval
-    ##  glmnet[lasso] 137.3272 137.4688 186.9694 141.8872 151.7692 366.3948     5
-    ##      cd[lasso] 139.3156 141.1347 153.4401 148.9580 152.0021 185.7902     5
+    ##  glmnet[lasso] 134.2815 137.9781 180.1913 140.2780 140.6955 347.7233     5
+    ##      cd[lasso] 138.2805 142.2778 153.8355 146.2943 147.9456 194.3795     5
 
 ``` r
 # difference of results
@@ -128,12 +132,9 @@ microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 287.2586 287.6215 303.7856 289.1748 294.3163 360.5567
-    ##  ordinis[lasso] 136.3948 136.6342 149.1672 136.9235 142.4321 193.4513
-    ##  neval
-    ##      5
-    ##      5
+    ##            expr      min       lq     mean  median       uq      max neval
+    ##   glmnet[lasso] 281.7596 282.8387 286.0647 288.247 288.2488 289.2295     5
+    ##  ordinis[lasso] 136.9276 136.9787 138.9756 137.684 138.6220 144.6655     5
 
 ``` r
 # difference of results
