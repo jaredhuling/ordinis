@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{fitted "ordinis" model object.}
 
+\item{REML}{an optional logical value. If \code{TRUE} the
+restricted log-likelihood is returned, else, if \code{FALSE},
+the log-likelihood is returned. Defaults to \code{FALSE}.}
+
 \item{...}{not used}
 }
 \description{

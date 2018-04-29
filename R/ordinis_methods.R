@@ -532,6 +532,9 @@ plot.cv.ordinis <- function(x, sign.lambda = 1, ...)
 #' log likelihood function for fitted ordinis objects
 #'
 #' @param object fitted "ordinis" model object.
+#' @param REML an optional logical value. If \code{TRUE} the
+#' restricted log-likelihood is returned, else, if \code{FALSE},
+#' the log-likelihood is returned. Defaults to \code{FALSE}.
 #' @param ... not used
 #' @rdname logLik
 #' @export
