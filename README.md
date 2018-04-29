@@ -97,8 +97,8 @@ y <- drop(x %*% b) + rnorm(n)
 lambdas = glmnet(x, y)$lambda
 
 microbenchmark(
-    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very low for comparable precision
-                                      lambda = lambdas)},
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very small 
+                                      lambda = lambdas)},    # for comparable precision
     "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
                                         tol = 1e-5)},
     times = 5
@@ -107,8 +107,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##           expr      min       lq     mean   median       uq      max neval
-    ##  glmnet[lasso] 126.5762 130.8960 168.5428 132.1078 132.9792 320.1547     5
-    ##      cd[lasso] 118.8446 123.8788 132.3816 125.8726 126.0638 167.2482     5
+    ##  glmnet[lasso] 124.6477 124.9031 166.8766 128.3924 128.4559 327.9838     5
+    ##      cd[lasso] 120.5383 121.7267 133.3490 125.5100 129.5065 169.4635     5
 
 ``` r
 # difference of results
@@ -121,16 +121,19 @@ max(abs(coef(resg) - reso$beta))
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-15,  # thresh must be very low for comparable precision
                                       lambda = lambdas)},
-    "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
+    "ordinis[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
                                         tol = 1e-5)},
     times = 5
 )
 ```
 
     ## Unit: milliseconds
-    ##           expr      min       lq     mean   median       uq      max neval
-    ##  glmnet[lasso] 257.9730 263.0274 262.8688 263.8827 264.5919 264.8692     5
-    ##      cd[lasso] 118.1103 118.5850 120.8434 120.2653 120.7351 126.5210     5
+    ##            expr      min       lq     mean   median       uq      max
+    ##   glmnet[lasso] 246.3486 251.0420 252.5600 252.3497 255.0398 258.0201
+    ##  ordinis[lasso] 119.7581 120.9608 123.2551 122.4310 124.4366 128.6888
+    ##  neval
+    ##      5
+    ##      5
 
 ``` r
 # difference of results

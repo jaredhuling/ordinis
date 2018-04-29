@@ -65,12 +65,13 @@ y <- drop(x %*% b) + rnorm(n)
 lambdas = glmnet(x, y)$lambda
 
 microbenchmark(
-    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very low for comparable precision
-                                      lambda = lambdas)},
+    "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very small 
+                                      lambda = lambdas)},    # for comparable precision
     "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
                                         tol = 1e-5)},
     times = 5
 )
+
 
 # difference of results
 max(abs(coef(resg) - reso$beta))
@@ -78,12 +79,13 @@ max(abs(coef(resg) - reso$beta))
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-15,  # thresh must be very low for comparable precision
                                       lambda = lambdas)},
-    "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
+    "ordinis[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
                                         tol = 1e-5)},
     times = 5
 )
 
 # difference of results
 max(abs(coef(resg) - reso$beta))
+
 
 ```
