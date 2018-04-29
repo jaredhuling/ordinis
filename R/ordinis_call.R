@@ -20,7 +20,7 @@
 #'                      It is recommended to set this parameter to be \code{NULL}
 #'                      (the default).
 #' @param alpha mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge
-#' @param gamma parameter for MCP/SCAD (not used yet)
+#' @param gamma parameter for MCP/SCAD
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s
 #' @param upper.limits a vector of length \code{ncol(x)} of upper limits for each coefficient. Can be a single value, which will
