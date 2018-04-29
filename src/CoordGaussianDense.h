@@ -1,5 +1,5 @@
-#ifndef COORDLASSO_H
-#define COORDLASSO_H
+#ifndef COORDGAUSSIANDENSE_H
+#define COORDGAUSSIANDENSE_H
 
 #include "CoordBase.h"
 #include "utils.h"
@@ -16,7 +16,7 @@
 // b => y
 // f(x) => 1/2 * ||Ax - b||^2
 // g(z) => lambda * ||z||_1
-class CoordLasso: public CoordBase<Eigen::VectorXd> //Eigen::SparseVector<double>
+class CoordGaussianDense: public CoordBase<Eigen::VectorXd> //Eigen::SparseVector<double>
 {
 protected:
     typedef float Scalar;
@@ -43,6 +43,7 @@ protected:
     double threshval;
     VectorXd resid_cur;
 
+    std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
     MapMat limits;
     double alpha;
@@ -109,7 +110,7 @@ protected:
 
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
     {
-        if (std::abs(value) > gamma * penalty * denom)
+        if (std::abs(value) > gamma * penalty)
             return(value / denom);
         else if(value > penalty)
             return((value - penalty) / (denom - 1.0 / gamma) );
@@ -122,8 +123,16 @@ protected:
 
     void set_threshold_func()
     {
-        thresh_func = &CoordLasso::soft_threshold;
-        //thresh_func = &CoordLasso::mcp_threshold;
+        if (penalty == "lasso")
+        {
+            thresh_func = &CoordGaussianDense::soft_threshold;
+        } else if (penalty == "mcp")
+        {
+            thresh_func = &CoordGaussianDense::mcp_threshold;
+        } else
+        {
+            thresh_func = &CoordGaussianDense::soft_threshold;
+        }
     }
 
     //void next_beta(Vector &res, VectorXi &eligible)
@@ -142,7 +151,7 @@ protected:
                 double beta_prev = beta( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, lambda, gamma, Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -169,7 +178,7 @@ protected:
                 double beta_prev = beta( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -199,6 +208,7 @@ protected:
         int j;
         double grad;
 
+
         // if no penalty multiplication factors specified
         if (penalty_factor_size < 1)
         {
@@ -209,7 +219,7 @@ protected:
                     double beta_prev = beta( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j) ;
 
-                    threshval = thresh_func(grad, lambda, gamma, Xsq(j) + lambda_ridge);
+                    threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -238,7 +248,7 @@ protected:
                     double beta_prev = beta( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, Xsq(j) + lambda_ridge);
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -305,19 +315,21 @@ protected:
 
 
 public:
-    CoordLasso(ConstGenericMatrix &datX_,
-               ConstGenericVector &datY_,
-               ConstGenericVector &weights_,
-               ArrayXd &penalty_factor_,
-               ConstGenericMatrix &limits_,
-               double alpha_ = 1.0,
-               double tol_ = 1e-6) :
+    CoordGaussianDense(ConstGenericMatrix &datX_,
+                       ConstGenericVector &datY_,
+                       ConstGenericVector &weights_,
+                       ArrayXd &penalty_factor_,
+                       ConstGenericMatrix &limits_,
+                       std::string &penalty_,
+                       double alpha_ = 1.0,
+                       double tol_ = 1e-6) :
     CoordBase<Eigen::VectorXd>
                 (datX_.rows(), datX_.cols(), tol_),
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
                                datY(datY_.data(), datY_.size()),
                                weights(weights_.data(), weights_.size()),
                                resid_cur(datY_),  //assumes we start our beta estimate at 0
+                               penalty(penalty_),
                                penalty_factor(penalty_factor_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_),
@@ -346,7 +358,7 @@ public:
             lambda0 = XY.cwiseAbs().maxCoeff();
         }
 
-        lambda0 /= ( alpha * 0.869749 ); //std::pow(1e-6, 1.0/(99.0));
+        lambda0 /= ( alpha * 1.0 ); //std::pow(1e-6, 1.0/(99.0));
 
 
         return lambda0;
@@ -471,4 +483,4 @@ public:
 
 
 
-#endif // COORDLASSO_H
+#endif // COORDGAUSSIANDENSE_H

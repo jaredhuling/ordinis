@@ -1,6 +1,6 @@
 #define EIGEN_DONT_PARALLELIZE
 
-#include "CoordLasso.h"
+#include "CoordGaussianDense.h"
 #include "DataStd.h"
 
 
@@ -34,17 +34,17 @@ inline void write_beta_matrix(SpMat &betas, int col, double beta0, SpVec &coef)
     }
 }
 
-List coord_lasso(Rcpp::NumericMatrix x_,
-                 Rcpp::NumericVector y_,
-                 Rcpp::NumericVector weights_,
-                 Rcpp::NumericVector lambda_,
-                 Rcpp::NumericVector penalty_factor_,
-                 Rcpp::NumericMatrix limits_,
-                 int    nlambda_,
-                 double lmin_ratio_,
-                 bool   standardize_,
-                 bool   intercept_,
-                 List   opts_)
+List coord_ordinis_dense(Rcpp::NumericMatrix x_,
+                         Rcpp::NumericVector y_,
+                         Rcpp::NumericVector weights_,
+                         Rcpp::NumericVector lambda_,
+                         Rcpp::NumericVector penalty_factor_,
+                         Rcpp::NumericMatrix limits_,
+                         int    nlambda_,
+                         double lmin_ratio_,
+                         bool   standardize_,
+                         bool   intercept_,
+                         List   opts_)
 {
 
     const int n = x_.rows();
@@ -82,12 +82,14 @@ List coord_lasso(Rcpp::NumericMatrix x_,
     const bool standardize = standardize_;
     const bool intercept   = intercept_;
 
+    std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
+
     DataStd<double> datstd(n, p, standardize, intercept);
     datstd.standardize(datX, datY, weights);
 
 
-    CoordLasso *solver;
-    solver = new CoordLasso(datX, datY, weights, penalty_factor, limits, alpha, tol);
+    CoordGaussianDense *solver;
+    solver = new CoordGaussianDense(datX, datY, weights, penalty_factor, limits, penalty[0], alpha, tol);
 
     if (nlambda < 1)
     {
@@ -152,23 +154,23 @@ List coord_lasso(Rcpp::NumericMatrix x_,
 }
 
 // [[Rcpp::export]]
-List coord_lasso_cpp(Rcpp::NumericMatrix x,
-                     Rcpp::NumericVector y,
-                     Rcpp::NumericVector weights,
-                     Rcpp::NumericVector lambda,
-                     Rcpp::NumericVector penalty_factor,
-                     Rcpp::NumericMatrix limits,
-                     int nlambda,
-                     double lmin_ratio,
-                     bool standardize,
-                     bool intercept,
-                     List opts)
+List coord_ordinis_dense_cpp(Rcpp::NumericMatrix x,
+                             Rcpp::NumericVector y,
+                             Rcpp::NumericVector weights,
+                             Rcpp::NumericVector lambda,
+                             Rcpp::NumericVector penalty_factor,
+                             Rcpp::NumericMatrix limits,
+                             int nlambda,
+                             double lmin_ratio,
+                             bool standardize,
+                             bool intercept,
+                             List opts)
 {
-    return coord_lasso(x, y, weights, lambda, penalty_factor,
-                       limits,
-                       nlambda,
-                       lmin_ratio,
-                       standardize,
-                       intercept,
-                       opts);
+    return coord_ordinis_dense(x, y, weights, lambda, penalty_factor,
+                               limits,
+                               nlambda,
+                               lmin_ratio,
+                               standardize,
+                               intercept,
+                               opts);
 }

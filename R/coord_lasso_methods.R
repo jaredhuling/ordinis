@@ -3,7 +3,7 @@
 
 #' Prediction method for coord lasso fitted objects
 #'
-#' @param object fitted "lasso" model object
+#' @param object fitted "ordinis" model object
 #' @param newx Matrix of new values for \code{x} at which predictions are to be made. Must be a matrix; can be sparse as in the
 #' \code{CsparseMatrix} objects of the \pkg{Matrix} package.
 #' This argument is not used for \code{type=c("coefficients","nonzero")}
@@ -17,7 +17,7 @@
 #' @importFrom methods as
 #' @importFrom stats approx predict quantile runif weighted.mean
 #' @return An object depending on the type argument
-#' @method predict lasso
+#' @method predict ordinis
 #' @export
 #' @examples
 #' set.seed(123)
@@ -32,18 +32,18 @@
 #' x.test <- matrix(rnorm(n.obs.test * n.vars), n.obs.test, n.vars)
 #' y.test <- rnorm(n.obs.test, sd = 3) + x.test %*% true.beta
 #'
-#' fit <- lasso(x = x, y = y, nlambda = 10)
+#' fit <- ordinis(x = x, y = y, nlambda = 10)
 #'
 #' preds.lasso <- predict(fit, newx = x.test, type = "response")
 #'
 #' apply(preds.lasso, 2, function(x) mean((y.test - x) ^ 2))
 #'
-predict.lasso <- function(object, newx, s = NULL,
-                         type = c("link",
-                                  "response",
-                                  "coefficients",
-                                  "nonzero",
-                                  "class"), ...)
+predict.ordinis <- function(object, newx, s = NULL,
+                            type = c("link",
+                                     "response",
+                                     "coefficients",
+                                     "nonzero",
+                                     "class"), ...)
 {
     type <- match.arg(type)
 
@@ -282,9 +282,9 @@ cv.cdgaussian <- function(outlist,lambda,x,y,foldid,type.measure,grouped,keep=FA
 
 
 
-#' Plot method for lasso fitted objects
+#' Plot method for ordinis fitted objects
 #'
-#' @param x fitted "lasso" model object or fitted "cv.lasso" model object
+#' @param x fitted "ordinis" model object or fitted "cv.ordinis" model object
 #' @param xvar What is on the X-axis. \code{"penalty"} plots against the penalty value applied to the coefficients, \code{"lambda"} against the log-lambda sequence
 #' @param labsize size of labels for variable names. If labsize = 0, then no variable names will be plotted
 #' @param xlab label for x-axis
@@ -306,18 +306,18 @@ cv.cdgaussian <- function(outlist,lambda,x,y,foldid,type.measure,grouped,keep=FA
 #' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 #' y <- rnorm(n.obs, sd = 2) + x %*% true.beta
 #'
-#' fit <- lasso(x = x, y = y, penalty = c("double.quadratic"))
+#' fit <- ordinis(x = x, y = y, penalty = c("double.quadratic"))
 #'
 #' plot(fit)
 #'
-plot.lasso <- function(x,
-                      xvar = c("loglambda", "lambda", "penalty"),
-                      labsize = 0.6,
-                      xlab = iname, ylab = NULL,
-                      main = x$penalty,
-                      xlim = NULL,
-                      n.print = 10L,
-                      ...)
+plot.ordinis <- function(x,
+                         xvar = c("loglambda", "lambda", "penalty"),
+                         labsize = 0.6,
+                         xlab = iname, ylab = NULL,
+                         main = x$penalty,
+                         xlim = NULL,
+                         n.print = 10L,
+                         ...)
 {
 
     xvar <- match.arg(xvar)
@@ -428,17 +428,17 @@ plot.lasso <- function(x,
 }
 
 
-#' Prediction function for fitted cross validation lasso objects
+#' Prediction function for fitted cross validation ordinis objects
 #'
-#' @param object fitted \code{"cv.lasso"} model object
+#' @param object fitted \code{"cv.ordinis"} model object
 #' @param newx Matrix of new values for \code{x} at which predictions are to be made. Must be a matrix; can be sparse as in the
 #' \code{CsparseMatrix} objects of the \pkg{Matrix} package
 #' This argument is not used for \code{type = c("coefficients","nonzero")}
 #' @param s Value(s) of the penalty parameter lambda at which predictions are required. Default is the entire sequence used to create
-#' the model. For \code{predict.cv.lasso()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation
-#' @param ... used to pass the other arguments for predict.lasso
+#' the model. For \code{predict.cv.ordinis()}, can also specify \code{"lambda.1se"} or \code{"lambda.min"} for best lambdas estimated by cross validation
+#' @param ... used to pass the other arguments for predict.ordinis
 #' @return An object depending on the type argument
-#' @method predict cv.lasso
+#' @method predict cv.ordinis
 #' @export
 #' @examples
 #' set.seed(123)
@@ -453,16 +453,16 @@ plot.lasso <- function(x,
 #' x.test <- matrix(rnorm(n.obs.test * n.vars), n.obs.test, n.vars)
 #' y.test <- rnorm(n.obs.test, sd = 3) + x.test %*% true.beta
 #'
-#' fit <- cv.lasso(x = x, y = y,
-#'                gamma = 0.1,
-#'                nlambda = 10)
+#' fit <- cv.ordinis(x = x, y = y,
+#'                   gamma = 0.1,
+#'                   nlambda = 10)
 #'
 #'
 #' preds.best <- predict(fit, newx = x.test, type = "response")
 #'
 #' apply(preds.best, 2, function(x) mean((y.test - x) ^ 2))
 #'
-predict.cv.lasso <- function(object, newx,
+predict.cv.ordinis <- function(object, newx,
                             s=c("lambda.min", "lambda.1se"), ...)
 {
     if(is.numeric(s))lambda=s
@@ -473,7 +473,7 @@ predict.cv.lasso <- function(object, newx,
         }
 
     else stop("Invalid form for s")
-    predict(object$lasso.fit, newx, s=lambda, ...)
+    predict(object$ordinis.fit, newx, s=lambda, ...)
 }
 
 
@@ -482,7 +482,7 @@ predict.cv.lasso <- function(object, newx,
 #'
 #' @param sign.lambda Either plot against log(lambda) (default) or its negative if \code{sign.lambda = -1}.
 #' @rdname plot
-#' @method plot cv.lasso
+#' @method plot cv.ordinis
 #' @export
 #' @examples
 #' set.seed(123)
@@ -494,11 +494,11 @@ predict.cv.lasso <- function(object, newx,
 #' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 #' y <- rnorm(n.obs, sd = 3) + x %*% true.beta
 #'
-#' fit <- cv.lasso(x = x, y = y, gamma = 0.1)
+#' fit <- cv.ordinis(x = x, y = y, gamma = 0.1)
 #'
 #' plot(fit)
 #'
-plot.cv.lasso <- function(x, sign.lambda = 1, ...)
+plot.cv.ordinis <- function(x, sign.lambda = 1, ...)
 {
     # modified from glmnet
     object = x
@@ -529,9 +529,9 @@ plot.cv.lasso <- function(x, sign.lambda = 1, ...)
 
 
 
-#' log likelihood function for fitted lasso objects
+#' log likelihood function for fitted ordinis objects
 #'
-#' @param object fitted "lasso" model object.
+#' @param object fitted "ordinis" model object.
 #' @param ... not used
 #' @rdname logLik
 #' @export
@@ -544,12 +544,12 @@ plot.cv.lasso <- function(x, sign.lambda = 1, ...)
 #' x <- matrix(rnorm(n.obs * n.vars), n.obs, n.vars)
 #' y <- rnorm(n.obs, sd = 3) + x %*% true.beta
 #'
-#' fit <- lasso(x = x, y = y)
+#' fit <- ordinis(x = x, y = y)
 #'
 #' logLik(fit)
 #'
 #'
-logLik.lasso <- function(object, REML = FALSE, ...) {
+logLik.ordinis <- function(object, REML = FALSE, ...) {
     # taken from ncvreg. Thanks to Patrick Breheny.
     n  <- as.numeric(object$nobs)
     df <- object$nzero + object$intercept

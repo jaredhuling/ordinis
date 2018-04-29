@@ -6,9 +6,9 @@
 
 using namespace Rcpp;
 
-// coord_lasso_cpp
-List coord_lasso_cpp(Rcpp::NumericMatrix x, Rcpp::NumericVector y, Rcpp::NumericVector weights, Rcpp::NumericVector lambda, Rcpp::NumericVector penalty_factor, Rcpp::NumericMatrix limits, int nlambda, double lmin_ratio, bool standardize, bool intercept, List opts);
-RcppExport SEXP _ordinis_coord_lasso_cpp(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP lambdaSEXP, SEXP penalty_factorSEXP, SEXP limitsSEXP, SEXP nlambdaSEXP, SEXP lmin_ratioSEXP, SEXP standardizeSEXP, SEXP interceptSEXP, SEXP optsSEXP) {
+// coord_ordinis_dense_cpp
+List coord_ordinis_dense_cpp(Rcpp::NumericMatrix x, Rcpp::NumericVector y, Rcpp::NumericVector weights, Rcpp::NumericVector lambda, Rcpp::NumericVector penalty_factor, Rcpp::NumericMatrix limits, int nlambda, double lmin_ratio, bool standardize, bool intercept, List opts);
+RcppExport SEXP _ordinis_coord_ordinis_dense_cpp(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP lambdaSEXP, SEXP penalty_factorSEXP, SEXP limitsSEXP, SEXP nlambdaSEXP, SEXP lmin_ratioSEXP, SEXP standardizeSEXP, SEXP interceptSEXP, SEXP optsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,13 +23,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type standardize(standardizeSEXP);
     Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
     Rcpp::traits::input_parameter< List >::type opts(optsSEXP);
-    rcpp_result_gen = Rcpp::wrap(coord_lasso_cpp(x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts));
+    rcpp_result_gen = Rcpp::wrap(coord_ordinis_dense_cpp(x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ordinis_coord_lasso_cpp", (DL_FUNC) &_ordinis_coord_lasso_cpp, 11},
+    {"_ordinis_coord_ordinis_dense_cpp", (DL_FUNC) &_ordinis_coord_ordinis_dense_cpp, 11},
     {NULL, NULL, 0}
 };
 

@@ -2,12 +2,14 @@
 
 #' Fitting Lasso-penalized Using the Coordinate Descent Algorithm
 #'
-#' @description lasso provides estimation of linear models with the lasso penalty
+#' @description ordinis provides estimation of linear models with the lasso penalty
 #'
 #'
 #' @param x The design matrix
 #' @param y The response vector
 #' @param weights a vector of weights of length equal to length of \code{y}
+#' @param penalty a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
+#' are available
 #' @param lambda A user provided sequence of \eqn{\lambda}. If set to
 #'                      \code{NULL}, the program will calculate its own sequence
 #'                      according to \code{nlambda} and \code{lambda_min_ratio},
@@ -52,24 +54,25 @@
 #'
 #'
 #' ## fit lasso model with 100 tuning parameter values
-#' res <- lasso(x, y)
+#' res <- ordinis(x, y)
 #' @export
-lasso <- function(x,
-                  y,
-                  weights = rep(1, NROW(y)),
-                  lambda           = numeric(0),
-                  alpha            = 1,
-                  gamma            = 3.7,
-                  penalty.factor,
-                  upper.limits     = rep(Inf, NCOL(x)),
-                  lower.limits     = rep(-Inf, NCOL(x)),
-                  nlambda          = 100L,
-                  lambda.min.ratio = NULL,
-                  family           = c("gaussian", "binomial"),
-                  intercept        = TRUE,
-                  standardize      = TRUE,
-                  maxit            = 1500L,
-                  tol              = 1e-4
+ordinis <- function(x,
+                    y,
+                    weights          = rep(1, NROW(y)),
+                    penalty          = c("lasso", "MCP", "SCAD"),
+                    lambda           = numeric(0),
+                    alpha            = 1,
+                    gamma            = 3.7,
+                    penalty.factor   = NULL,
+                    upper.limits     = rep(Inf, NCOL(x)),
+                    lower.limits     = rep(-Inf, NCOL(x)),
+                    nlambda          = 100L,
+                    lambda.min.ratio = NULL,
+                    family           = c("gaussian", "binomial"),
+                    intercept        = TRUE,
+                    standardize      = TRUE,
+                    maxit            = 1500L,
+                    tol              = 1e-4
 )
 {
 
@@ -123,7 +126,7 @@ lasso <- function(x,
         stop("length of weights not equal to length of y")
     }
 
-    if (missing(penalty.factor))
+    if (is.null(penalty.factor))
     {
         penalty.factor <- numeric(0)
     } else
@@ -180,25 +183,29 @@ lasso <- function(x,
     tol         <- as.numeric(tol[1])
     alpha       <- as.double(alpha[1])
     gamma       <- as.double(gamma[1])
+    penalty     <- as.character(penalty[1])
+
+    opts <- list(maxit       = maxit,
+                 tol         = tol,
+                 alpha       = alpha,
+                 gamma       = gamma,
+                 penalty     = penalty)
 
     if (gamma <= 1) stop("gamma must be greater than 1")
 
     if (family == "gaussian")
     {
-        res <- coord_lasso_cpp(x,
-                               y,
-                               weights,
-                               lambda,
-                               penalty.factor,
-                               rbind(upper.limits, lower.limits),
-                               nlambda,
-                               lambda.min.ratio,
-                               standardize,
-                               intercept,
-                               list(maxit       = maxit,
-                                    tol         = tol,
-                                    alpha       = alpha,
-                                    gamma       = gamma)
+        res <- coord_ordinis_dense_cpp(x,
+                                       y,
+                                       weights,
+                                       lambda,
+                                       penalty.factor,
+                                       rbind(upper.limits, lower.limits),
+                                       nlambda,
+                                       lambda.min.ratio,
+                                       standardize,
+                                       intercept,
+                                       opts
         )
         res$beta   <- res$beta[, 1:res$last, drop = FALSE]
 
@@ -224,6 +231,7 @@ lasso <- function(x,
 
 
     res$family      <- family
+    res$penalty     <- penalty
     res$standardize <- standardize
     res$intercept   <- intercept
     res$nobs  <- n
@@ -233,7 +241,7 @@ lasso <- function(x,
                      "gaussian" = "cdgaussian",
                      "binomial" = "cdbinomial")
 
-    class(res) <- c("lasso", class2)
+    class(res) <- c("ordinis", class2)
     res
 }
 
@@ -274,7 +282,7 @@ lasso <- function(x,
 #' and each value of lambda for each model. This means these fits are computed with this observation and the rest of its
 #' fold omitted. The folid vector is also returned. Default is \code{keep = FALSE}
 #' @param parallel If TRUE, use parallel foreach to fit each fold. Must register parallel before hand, such as \pkg{doMC}.
-#' @param ... other parameters to be passed to \code{"lasso"} function
+#' @param ... other parameters to be passed to \code{"ordinis"} function
 #'
 #' @examples set.seed(123)
 #' n = 100
@@ -284,27 +292,27 @@ lasso <- function(x,
 #' y = drop(x %*% b) + rnorm(n)
 #'
 #' ## fit lasso model with 100 tuning parameter values
-#' res <- cv.lasso(x, y)
+#' res <- cv.ordinis(x, y)
 #'
 #'
 #' @export
-cv.lasso <- function(x,
-                     y,
-                     lambda   = numeric(0),
-                     gamma    = 3.7,
-                     type.measure = c("mse", "deviance", "class", "auc", "mae"),
-                     nfolds   = 10,
-                     foldid   = NULL,
-                     grouped  = TRUE,
-                     keep     = FALSE,
-                     parallel = FALSE,
-                     ...)
+cv.ordinis <- function(x,
+                       y,
+                       lambda   = numeric(0),
+                       gamma    = 3.7,
+                       type.measure = c("mse", "deviance", "class", "auc", "mae"),
+                       nfolds   = 10,
+                       foldid   = NULL,
+                       grouped  = TRUE,
+                       keep     = FALSE,
+                       parallel = FALSE,
+                       ...)
 {
     if (missing(type.measure))
         type.measure = "default"
     else type.measure = match.arg(type.measure)
     if (length(lambda) == 1 && length(lambda) < 2)
-        stop("Need more than one value of lambda for cv.lasso")
+        stop("Need more than one value of lambda for cv.ordinis")
     N = nrow(x)
     y = drop(y)
 
@@ -312,11 +320,11 @@ cv.lasso <- function(x,
     which = match(c("type.measure", "nfolds", "foldid"), names(two.call), FALSE)
     if (any(which))
         two.call = two.call[-which]
-    two.call[[1]] = as.name("lasso")
-    two.object = lasso(x,
-                       y,
-                       lambda = lambda,
-                       gamma  = gamma, ...)
+    two.call[[1]] = as.name("ordinis")
+    two.object = ordinis(x,
+                         y,
+                         lambda = lambda,
+                         gamma  = gamma, ...)
     two.object$call = two.call
 
 
@@ -336,11 +344,11 @@ cv.lasso <- function(x,
                 y_sub = y[!which, ]
             else y_sub = y[!which]
 
-            lasso(x[!which, , drop = FALSE],
-                  y_sub,
-                  lambda = lambda,
-                  gamma  = gamma,
-                  ...)
+            ordinis(x[!which, , drop = FALSE],
+                    y_sub,
+                    lambda = lambda,
+                    gamma  = gamma,
+                    ...)
         }
     }
     else {
@@ -350,10 +358,10 @@ cv.lasso <- function(x,
                 y_sub = y[!which, ]
             else y_sub = y[!which]
 
-            outlist[[i]] = lasso(x[!which, , drop = FALSE],
-                                 y_sub,
-                                 lambda = lambda,
-                                 gamma  = gamma, ...)
+            outlist[[i]] = ordinis(x[!which, , drop = FALSE],
+                                   y_sub,
+                                   lambda = lambda,
+                                   gamma  = gamma, ...)
         }
     }
 
@@ -392,19 +400,19 @@ cv.lasso <- function(x,
     cvsd    <- cvstuff$cvsd
     cvname  <- cvstuff$name
 
-    out <- list(lambda    = two.object$lambda,
-                cvm       = cvm,
-                cvsd      = cvsd,
-                cvup      = cvm + cvsd,
-                cvlo      = cvm - cvsd,
-                name      = cvname,
-                nzero     = nz,
-                lasso.fit = two.object)
+    out <- list(lambda      = two.object$lambda,
+                cvm         = cvm,
+                cvsd        = cvsd,
+                cvup        = cvm + cvsd,
+                cvlo        = cvm - cvsd,
+                name        = cvname,
+                nzero       = nz,
+                ordinis.fit = two.object)
     if(keep)out=c(out,list(fit.preval=cvstuff$fit.preval,foldid=foldid))
     lamin=if(type.measure=="auc")getmin(two.object$lambda,-cvm,cvsd)
     else getmin(two.object$lambda,cvm,cvsd)
     obj=c(out,as.list(lamin))
-    class(obj)="cv.lasso"
+    class(obj)="cv.ordinis"
     obj
 
 }

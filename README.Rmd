@@ -33,10 +33,10 @@ b <- matrix(c(runif(m), rep(0, p - m)))
 x <- matrix(rnorm(n * p, sd = 3), n, p)
 y <- drop(x %*% b) + rnorm(n)
 
-mod <- lasso(x, y, 
-             lower.limits = rep(0, p), # force all coefficients to be positive
-             penalty.factor = c(0, 0, rep(1, p-2)), # don't penalize first two coefficients
-             alpha = 0.5)  # use elastic net with alpha = 0.5
+mod <- ordinis(x, y, 
+               lower.limits = rep(0, p), # force all coefficients to be positive
+               penalty.factor = c(0, 0, rep(1, p-2)), # don't penalize first two coefficients
+               alpha = 0.5)  # use elastic net with alpha = 0.5
 
 plot(mod)
 
@@ -67,8 +67,8 @@ lambdas = glmnet(x, y)$lambda
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-10,  # thresh must be very small 
                                       lambda = lambdas)},    # for comparable precision
-    "cd[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
-                                        tol = 1e-5)},
+    "cd[lasso]"     = {reso <- ordinis(x, y, lambda = lambdas, 
+                                       tol = 1e-5)},
     times = 5
 )
 
@@ -79,8 +79,8 @@ max(abs(coef(resg) - reso$beta))
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, thresh = 1e-15,  # thresh must be very low for comparable precision
                                       lambda = lambdas)},
-    "ordinis[lasso]"     = {reso <- lasso(x, y, lambda = lambdas, 
-                                        tol = 1e-5)},
+    "ordinis[lasso]"     = {reso <- ordinis(x, y, lambda = lambdas, 
+                                            tol = 1e-5)},
     times = 5
 )
 
