@@ -12,7 +12,9 @@ Depends:
     Matrix
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 0.12.16)
+Imports: 
+    Rcpp (>= 0.12.16),
+    foreach
 LinkingTo: 
     Rcpp, 
     RcppEigen
