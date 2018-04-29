@@ -107,8 +107,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##           expr      min       lq     mean   median       uq      max neval
-    ##  glmnet[lasso] 124.6477 124.9031 166.8766 128.3924 128.4559 327.9838     5
-    ##      cd[lasso] 120.5383 121.7267 133.3490 125.5100 129.5065 169.4635     5
+    ##  glmnet[lasso] 118.4330 124.0719 167.3823 129.7881 132.0366 332.5818     5
+    ##      cd[lasso] 111.3436 122.6652 131.4544 124.5534 129.7553 168.9545     5
 
 ``` r
 # difference of results
@@ -129,8 +129,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 246.3486 251.0420 252.5600 252.3497 255.0398 258.0201
-    ##  ordinis[lasso] 119.7581 120.9608 123.2551 122.4310 124.4366 128.6888
+    ##   glmnet[lasso] 257.0063 257.3409 259.1350 258.0322 261.0537 262.2419
+    ##  ordinis[lasso] 115.7356 116.3878 118.9364 116.4395 120.5282 125.5909
     ##  neval
     ##      5
     ##      5
