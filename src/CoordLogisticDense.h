@@ -102,11 +102,14 @@ protected:
 
     void update_quadratic_approx()
     {
-        p = 1.0 / (1.0 + (-1.0 * xbeta_cur.array().exp()));
+        p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
 
         resid_cur = weights.array().sqrt() * (datY.array() - p.array());
 
         W = p.array() * (1 - p.array());
+
+        std::cout << "Wts: " << W.head(10).transpose() << std::endl;
+        std::cout << "prob: " << p.head(10).transpose() << std::endl;
 
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
@@ -287,7 +290,7 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j) ;
+                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
@@ -437,14 +440,14 @@ public:
             {
                 if (penalty_factor(i) != 0.0)
                 {
-                    double valcur = std::abs(XY(i) - 0.0 * XXtmp(i)) / penalty_factor(i);
+                    double valcur = std::abs(XY(i)) / penalty_factor(i);
 
                     if (valcur > lambda0) lambda0 = valcur;
                 }
             }
         } else
         {
-            lambda0 = (XY - 0.0 * datX.transpose().rowwise().sum()).cwiseAbs().maxCoeff();
+            lambda0 = (XY).cwiseAbs().maxCoeff();
         }
 
         lambda0 /= ( alpha * 1.0 ); //std::pow(1e-6, 1.0/(99.0));
