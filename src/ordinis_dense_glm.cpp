@@ -86,8 +86,8 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
 
     std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
 
-    DataStd<double> datstd(n, p, standardize, intercept, true);
-    datstd.standardize(datX, datY, weights);
+    DataStd<double> datstd(n, p, standardize, true, true);
+    datstd.standardize(datX, datY);
 
     CoordLogisticDense *solver;
     solver = new CoordLogisticDense(datX, datY,
@@ -135,8 +135,8 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         SpVec res = solver->get_beta();
         int nzero = solver->get_nzero();
         double beta0 = 0.0;
-        datstd.recover(beta0, res);
         beta0 = solver->get_intercept();
+        datstd.recover(beta0, res);
         //beta(0,i) = beta0;
         //beta.block(1, i, p, 1) = res;
         write_beta_matrix(beta, i, beta0, res);

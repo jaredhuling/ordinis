@@ -41,7 +41,7 @@ protected:
     Scalar lambda, lambda_ridge, gamma;  // L1 penalty
 
     double threshval;
-    VectorXd resid_cur, xbeta_cur, p, W, z;
+    VectorXd resid_cur, xbeta_cur, p, W, weightssqrt, z;
 
     std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
@@ -86,16 +86,17 @@ protected:
     }
     */
 
-    void update_gradient()
-    {
-
-    }
-
     void initialize_params()
     {
-        double ymean = (weights.array().sqrt() * datY.array()).matrix().mean();
+        double ymean = (weights.array() * datY.array()).matrix().mean();
 
-        beta0 = std::log(ymean / (1.0 - ymean));
+        if (intercept)
+        {
+            beta0 = std::log(ymean / (1.0 - ymean));
+        } else
+        {
+            beta0 = 0.0;
+        }
 
         xbeta_cur.fill(beta0);
     }
@@ -104,9 +105,7 @@ protected:
     {
         p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
 
-        resid_cur = weights.array().sqrt() * (datY.array() - p.array());
-
-        W = p.array() * (1 - p.array());
+        W = weights.array() * p.array() * (1 - p.array());
 
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
@@ -117,22 +116,25 @@ protected:
             }
         }
 
+        resid_cur = weights.array() * (datY.array() - p.array()); // + xbeta_cur.array() * W.array().sqrt();
+
         Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
-        weights_sum = weights.sum();
+        weights_sum = W.sum();
     }
 
     void update_intercept()
     {
-        resids_sum = resid_cur.sum();
 
         if (intercept)
         {
+            resids_sum = (W.array() * resid_cur.array()).matrix().sum();
+
             double beta0_delta = resids_sum / weights_sum;
 
-            beta0 += beta0_delta;
+            beta0             += beta0_delta;
 
-            resid_cur.array() -= beta0_delta * weights.array();
+            resid_cur.array() -= beta0_delta * W.array();
 
             xbeta_cur.array() += beta0_delta;
         }
@@ -201,6 +203,9 @@ protected:
         int j;
         double grad;
 
+        // now update intercept if necessary
+        update_intercept();
+
         // if no penalty multiplication factors specified
         if (penalty_factor_size < 1)
         {
@@ -224,7 +229,7 @@ protected:
 
                     VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
 
-                    xbeta_cur += delta_cur;
+                    xbeta_cur         += delta_cur;
                     resid_cur.array() -= delta_cur.array() * W.array();
 
                     // update eligible set if necessary
@@ -255,7 +260,7 @@ protected:
 
                     VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
 
-                    xbeta_cur += delta_cur;
+                    xbeta_cur         += delta_cur;
                     resid_cur.array() -= delta_cur.array() * W.array();
 
                     // update eligible set if necessary
@@ -266,9 +271,6 @@ protected:
             }
         }
 
-        // now update intercept if necessary
-        update_intercept();
-
     }
 
     //void next_beta(Vector &res, VectorXi &eligible)
@@ -277,6 +279,9 @@ protected:
 
         int j;
         double grad;
+
+        // now update intercept if necessary
+        update_intercept();
 
 
         // if no penalty multiplication factors specified
@@ -303,7 +308,7 @@ protected:
 
                         VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
 
-                        xbeta_cur += delta_cur;
+                        xbeta_cur         += delta_cur;
                         resid_cur.array() -= delta_cur.array() * W.array();
 
                         // update eligible set if necessary
@@ -336,7 +341,7 @@ protected:
 
                         VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
 
-                        xbeta_cur += delta_cur;
+                        xbeta_cur         += delta_cur;
                         resid_cur.array() -= delta_cur.array() * W.array();
 
                         // update eligible set if necessary
@@ -347,9 +352,6 @@ protected:
                 } // end eligible set check
             }
         }
-
-        // now update intercept if necessary
-        update_intercept();
 
     }
 
@@ -415,7 +417,7 @@ public:
                                resid_cur(datX_.rows()),
                                xbeta_cur(datX_.rows()),
                                p(datX_.rows()),
-                               W(datX_.rows()),
+                               W(datX_.rows()), weightssqrt(weights.array().sqrt()),
                                z(datX_.rows()),
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
@@ -470,6 +472,9 @@ public:
         eligible_set.reserve(std::min(nobs, nvars));
 
         nzero = 0;
+
+        xbeta_cur.setZero();
+        resid_cur.setZero();
 
         // this starts estimate of intercept
         initialize_params();
@@ -531,10 +536,9 @@ public:
         {
             irls_iter++;
 
+            //xbeta_cur.array() = (datX * beta).array() + beta0; //this is efficient because beta is a sparse vector
+
             update_quadratic_approx();
-
-            update_gradient();
-
 
             int current_iter = 0;
 
@@ -552,6 +556,8 @@ public:
                     current_iter++;
                     beta_prev = beta;
 
+                    //update_quadratic_approx();
+
                     update_beta(eligible_set);
 
                     if(converged()) break;
@@ -565,6 +571,8 @@ public:
                 {
                     ineligible_set(i_.index()) = 0;
                 }
+
+                //update_quadratic_approx();
 
                 update_beta(ineligible_set);
 

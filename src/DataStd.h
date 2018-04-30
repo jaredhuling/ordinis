@@ -233,10 +233,10 @@ public:
                 beta0 = 0.0;
                 break;
             case 1:
-                beta0 = 0.0;
                 coef /= scaleX;
                 if (!glm)
                 {
+                    beta0 = 0.0;
                     coef *= scaleY;
                 }
                 break;
@@ -247,7 +247,7 @@ public:
                     beta0 = meanY - (coef * meanX).sum();
                 } else
                 {
-                    beta0 = 0.0;
+                    beta0 -= (coef * meanX).sum();
                 }
                 break;
             case 3:
@@ -258,7 +258,7 @@ public:
                     beta0 = meanY - (coef * meanX).sum();
                 } else
                 {
-                    beta0 = 0.0;
+                    beta0 -= (coef * meanX).sum();
                 }
                 break;
             default:
@@ -271,24 +271,24 @@ public:
         switch(flag)
         {
             case 0:
-                beta0 = 0;
+                beta0 = 0.0;
                 break;
             case 1:
-                beta0 = 0;
                 elementwise_quot(coef, scaleX);
                 if (!glm)
                 {
                     coef *= scaleY;
+                    beta0 = 0.0;
                 }
                 break;
             case 2:
-                coef *= scaleY;
                 if (!glm)
                 {
+                    coef *= scaleY;
                     beta0 = meanY - sparse_inner_product(coef, meanX);
                 } else
                 {
-                    beta0 = 0.0;
+                    beta0 -= sparse_inner_product(coef, meanX);
                 }
                 break;
             case 3:
@@ -299,7 +299,7 @@ public:
                     beta0 = meanY - sparse_inner_product(coef, meanX);
                 } else
                 {
-                    beta0 = 0.0;
+                    beta0 -= sparse_inner_product(coef, meanX);
                 }
                 break;
             default:
