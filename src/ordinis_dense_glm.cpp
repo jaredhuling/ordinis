@@ -101,8 +101,6 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         double lmax = 0.0;
         lmax = solver->get_lambda_zero() / double(n);
 
-        std::cout << "lmax: " << lmax << std::endl;
-
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
         lambda = lambda.exp();

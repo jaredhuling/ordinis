@@ -240,7 +240,7 @@ ordinis <- function(x,
 
     } else if (family == "binomial")
     {
-        stop("binomial not supported yet")
+        stop("binomial not yet supported")
         res <- coord_ordinis_dense_glm_cpp(x,
                                            y,
                                            weights,

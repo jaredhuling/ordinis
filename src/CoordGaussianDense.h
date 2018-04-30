@@ -178,7 +178,7 @@ protected:
                 double beta_prev = beta.coeff( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -248,7 +248,7 @@ protected:
                     double beta_prev = beta.coeff( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);

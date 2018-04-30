@@ -108,9 +108,6 @@ protected:
 
         W = p.array() * (1 - p.array());
 
-        std::cout << "Wts: " << W.head(10).transpose() << std::endl;
-        std::cout << "prob: " << p.head(10).transpose() << std::endl;
-
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
         {
@@ -120,7 +117,7 @@ protected:
             }
         }
 
-        Xsq = (W.asDiagonal() * datX).array().square().colwise().sum();
+        Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
         weights_sum = weights.sum();
     }
@@ -244,7 +241,7 @@ protected:
                 double beta_prev = beta.coeff( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -325,7 +322,7 @@ protected:
                     double beta_prev = beta.coeff( j ); //beta(j);
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -528,6 +525,8 @@ public:
         //int i;
         int irls_iter = 0;
 
+        beta_prev_irls = beta;
+
         while(irls_iter < maxit_irls)
         {
             irls_iter++;
@@ -572,7 +571,7 @@ public:
                 if(converged()) break;
             } //end coordinate descent loop
 
-            if(converged()) break;
+            if(converged_irls()) break;
 
         } //end irls loop
 

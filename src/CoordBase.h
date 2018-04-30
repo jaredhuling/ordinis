@@ -17,6 +17,7 @@ protected:
 
     VecTypeBeta beta;        // parameters to be optimized
     VecTypeBeta beta_prev;   // auxiliary parameters
+    VecTypeBeta beta_prev_irls;   // auxiliary parameters
     SparseVectori eligible_set;
     VectorXi ineligible_set;
     double loss;
@@ -32,6 +33,11 @@ protected:
     virtual bool converged()
     {
         return (stopRule(beta, beta_prev, tol));
+    }
+
+    virtual bool converged_irls()
+    {
+        return (stopRule(beta, beta_prev_irls, tol));
     }
 
 
@@ -52,7 +58,7 @@ public:
     CoordBase(int n_, int p_,
               double tol_ = 1e-6) :
     nvars(p_), nobs(n_),
-    beta(p_), beta_prev(p_), // allocate space but do not set values
+    beta(p_), beta_prev(p_), beta_prev_irls(p_), // allocate space but do not set values
     eligible_set(p_), ineligible_set(p_),
     tol(tol_)
     {}
