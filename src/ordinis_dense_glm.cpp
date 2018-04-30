@@ -1,6 +1,6 @@
 #define EIGEN_DONT_PARALLELIZE
 
-#include "CoordGaussianDense.h"
+#include "CoordLogisticDense.h"
 #include "DataStd.h"
 
 
@@ -34,17 +34,17 @@ inline void write_beta_matrix(SpMat &betas, int col, double beta0, SpVec &coef)
     }
 }
 
-List coord_ordinis_dense(Rcpp::NumericMatrix x_,
-                         Rcpp::NumericVector y_,
-                         Rcpp::NumericVector weights_,
-                         Rcpp::NumericVector lambda_,
-                         Rcpp::NumericVector penalty_factor_,
-                         Rcpp::NumericMatrix limits_,
-                         int    nlambda_,
-                         double lmin_ratio_,
-                         bool   standardize_,
-                         bool   intercept_,
-                         List   opts_)
+List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
+                             Rcpp::NumericVector y_,
+                             Rcpp::NumericVector weights_,
+                             Rcpp::NumericVector lambda_,
+                             Rcpp::NumericVector penalty_factor_,
+                             Rcpp::NumericMatrix limits_,
+                             int    nlambda_,
+                             double lmin_ratio_,
+                             bool   standardize_,
+                             bool   intercept_,
+                             List   opts_)
 {
 
     const int n = x_.rows();
@@ -79,22 +79,29 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     const double tol       = as<double>(opts["tol"]);
     const double alpha     = as<double>(opts["alpha"]);
     const double gamma     = as<double>(opts["gamma"]);
+    const int maxit_irls   = as<int>(opts["maxit.irls"]);
+    const double tol_irls  = as<double>(opts["tol.irls"]);
     const bool standardize = standardize_;
     const bool intercept   = intercept_;
 
     std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
 
-    DataStd<double> datstd(n, p, standardize, intercept, false);
+    DataStd<double> datstd(n, p, standardize, intercept, true);
     datstd.standardize(datX, datY, weights);
 
-
-    CoordGaussianDense *solver;
-    solver = new CoordGaussianDense(datX, datY, weights, penalty_factor, limits, penalty[0], alpha, tol);
+    CoordLogisticDense *solver;
+    solver = new CoordLogisticDense(datX, datY,
+                                    weights, penalty_factor,
+                                    limits, penalty[0],
+                                    intercept, alpha,
+                                    tol, maxit_irls, tol_irls);
 
     if (nlambda < 1)
     {
         double lmax = 0.0;
-        lmax = solver->get_lambda_zero() / double(n) * datstd.get_scaleY();
+        lmax = solver->get_lambda_zero() / double(n);
+
+        std::cout << "lmax: " << lmax << std::endl;
 
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
@@ -117,7 +124,8 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
-        ilambda = lambda[i] * double(n) / datstd.get_scaleY();
+
+        ilambda = lambda[i] * double(n);
 
         if(i == 0)
             solver->init(ilambda, gamma);
@@ -125,10 +133,12 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
             solver->init_warm(ilambda, gamma);
 
         niter[i] = solver->solve(maxit);
+
         SpVec res = solver->get_beta();
         int nzero = solver->get_nzero();
         double beta0 = 0.0;
         datstd.recover(beta0, res);
+        beta0 = solver->get_intercept();
         //beta(0,i) = beta0;
         //beta.block(1, i, p, 1) = res;
         write_beta_matrix(beta, i, beta0, res);
@@ -154,23 +164,23 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
 }
 
 // [[Rcpp::export]]
-List coord_ordinis_dense_cpp(Rcpp::NumericMatrix x,
-                             Rcpp::NumericVector y,
-                             Rcpp::NumericVector weights,
-                             Rcpp::NumericVector lambda,
-                             Rcpp::NumericVector penalty_factor,
-                             Rcpp::NumericMatrix limits,
-                             int nlambda,
-                             double lmin_ratio,
-                             bool standardize,
-                             bool intercept,
-                             List opts)
+List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x,
+                                 Rcpp::NumericVector y,
+                                 Rcpp::NumericVector weights,
+                                 Rcpp::NumericVector lambda,
+                                 Rcpp::NumericVector penalty_factor,
+                                 Rcpp::NumericMatrix limits,
+                                 int nlambda,
+                                 double lmin_ratio,
+                                 bool standardize,
+                                 bool intercept,
+                                 List opts)
 {
-    return coord_ordinis_dense(x, y, weights, lambda, penalty_factor,
-                               limits,
-                               nlambda,
-                               lmin_ratio,
-                               standardize,
-                               intercept,
-                               opts);
+    return coord_ordinis_dense_glm(x, y, weights, lambda, penalty_factor,
+                                   limits,
+                                   nlambda,
+                                   lmin_ratio,
+                                   standardize,
+                                   intercept,
+                                   opts);
 }

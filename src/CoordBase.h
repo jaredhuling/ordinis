@@ -101,7 +101,7 @@ public:
 
     virtual VecTypeBeta get_beta() { return beta; }
     virtual int get_nzero() {return nzero;}
-
+    double get_intercept() { return 0.0; }
     virtual double get_loss() { return loss; }
 };
 

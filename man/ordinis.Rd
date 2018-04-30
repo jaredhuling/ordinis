@@ -4,12 +4,12 @@
 \alias{ordinis}
 \title{Fitting Lasso-penalized Using the Coordinate Descent Algorithm}
 \usage{
-ordinis(x, y, weights = rep(1, NROW(y)), penalty = c("lasso", "mcp",
-  "scad"), lambda = numeric(0), alpha = 1, gamma = 3.7,
-  penalty.factor = NULL, upper.limits = rep(Inf, NCOL(x)),
+ordinis(x, y, weights = rep(1, NROW(y)), family = c("gaussian", "binomial"),
+  penalty = c("lasso", "mcp", "scad"), lambda = numeric(0), alpha = 1,
+  gamma = 3.7, penalty.factor = NULL, upper.limits = rep(Inf, NCOL(x)),
   lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
-  lambda.min.ratio = NULL, family = c("gaussian", "binomial"),
-  intercept = TRUE, standardize = TRUE, maxit = 1500L, tol = 1e-04)
+  lambda.min.ratio = NULL, intercept = TRUE, standardize = TRUE,
+  maxit = 5000L, tol = 1e-04, maxit.irls = 100L, tol.irls = 1e-04)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -17,6 +17,8 @@ ordinis(x, y, weights = rep(1, NROW(y)), penalty = c("lasso", "mcp",
 \item{y}{The response vector}
 
 \item{weights}{a vector of weights of length equal to length of \code{y}}
+
+\item{family}{family of underlying model. Only "gaussian" for continuous responses is available now}
 
 \item{penalty}{a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
 are available}
@@ -57,17 +59,19 @@ the program calculates its own \eqn{\lambda}
 value is the same as \pkg{glmnet}: 0.0001 if
 \code{nrow(x) >= ncol(x)} and 0.01 otherwise.}
 
-\item{family}{family of underlying model. Only "gaussian" for continuous responses is available now}
-
 \item{intercept}{Whether to fit an intercept in the model. Default is \code{TRUE}.}
 
 \item{standardize}{Whether to standardize the design matrix before
 fitting the model. Default is \code{TRUE}. Fitted coefficients
 are always returned on the original scale.}
 
-\item{maxit}{Maximum number of admm iterations.}
+\item{maxit}{Maximum number of coordinate descent iterations.}
 
 \item{tol}{convergence tolerance parameter.}
+
+\item{maxit.irls}{Maximum number of coordinate descent iterations.}
+
+\item{tol.irls}{convergence tolerance parameter.}
 }
 \description{
 ordinis provides estimation of linear models with the lasso penalty
@@ -83,4 +87,9 @@ y = drop(x \%*\% b) + rnorm(n)
 
 ## fit lasso model with 100 tuning parameter values
 res <- ordinis(x, y)
+
+y2 <- 1 * (y > 0)
+
+resb <- ordinis(x, y2, family = "binomial")
+
 }

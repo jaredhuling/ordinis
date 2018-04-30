@@ -33,6 +33,7 @@ private:
 
     double meanY;
     double scaleY;
+    bool   glm;
     Array  meanX;
     Array  scaleX;
 
@@ -65,12 +66,13 @@ private:
     }
 
 public:
-    DataStd(int n_, int p_, bool standardize, bool intercept) :
+    DataStd(int n_, int p_, bool standardize, bool intercept, bool glm_ = false) :
         flag(int(standardize) + 2 * int(intercept)),
         n(n_),
         p(p_),
         meanY(0.0),
-        scaleY(1.0)
+        scaleY(1.0),
+        glm(glm_)
     {
         if(flag == 3 || flag == 2)
             meanX.resize(p);
@@ -86,15 +88,21 @@ public:
         switch(flag)
         {
             case 1:
-                scaleY = sd_n(Y);
-                Y.array() /= scaleY;
+                if (!glm)
+                {
+                    scaleY = sd_n(Y);
+                    Y.array() /= scaleY;
+                }
                 break;
             case 2:
             case 3:
-                meanY = Y.mean();
-                Y.array() -= meanY;
-                scaleY = Y.norm() * n_invsqrt;
-                Y.array() /= scaleY;
+                if (!glm)
+                {
+                    meanY = Y.mean();
+                    Y.array() -= meanY;
+                    scaleY = Y.norm() * n_invsqrt;
+                    Y.array() /= scaleY;
+                }
                 break;
             default:
                 break;
@@ -146,7 +154,10 @@ public:
 
         Vector sqrt_wts = wts.array().sqrt();
 
-        Y.array() *= sqrt_wts.array();
+        if (!glm)
+        {
+            Y.array() *= sqrt_wts.array();
+        }
 
 
 
@@ -154,15 +165,21 @@ public:
         switch(flag)
         {
         case 1:
-            scaleY = sd_n(Y);
-            Y.array() /= scaleY;
+            if (!glm)
+            {
+                scaleY = sd_n(Y);
+                Y.array() /= scaleY;
+            }
             break;
         case 2:
         case 3:
-            meanY = Y.mean();
-            Y.array() -= meanY;
-            scaleY = Y.norm() * n_invsqrt;
-            Y.array() /= scaleY;
+            if (!glm)
+            {
+                meanY = Y.mean();
+                Y.array() -= meanY;
+                scaleY = Y.norm() * n_invsqrt;
+                Y.array() /= scaleY;
+            }
             break;
         default:
             break;
@@ -213,21 +230,36 @@ public:
         switch(flag)
         {
             case 0:
-                beta0 = 0;
+                beta0 = 0.0;
                 break;
             case 1:
-                beta0 = 0;
+                beta0 = 0.0;
                 coef /= scaleX;
-                coef *= scaleY;
+                if (!glm)
+                {
+                    coef *= scaleY;
+                }
                 break;
             case 2:
-                coef *= scaleY;
-                beta0 = meanY - (coef * meanX).sum();
+                if (!glm)
+                {
+                    coef *= scaleY;
+                    beta0 = meanY - (coef * meanX).sum();
+                } else
+                {
+                    beta0 = 0.0;
+                }
                 break;
             case 3:
                 coef /= scaleX;
-                coef *= scaleY;
-                beta0 = meanY - (coef * meanX).sum();
+                if (!glm)
+                {
+                    coef *= scaleY;
+                    beta0 = meanY - (coef * meanX).sum();
+                } else
+                {
+                    beta0 = 0.0;
+                }
                 break;
             default:
                 break;
@@ -244,16 +276,31 @@ public:
             case 1:
                 beta0 = 0;
                 elementwise_quot(coef, scaleX);
-                coef *= scaleY;
+                if (!glm)
+                {
+                    coef *= scaleY;
+                }
                 break;
             case 2:
                 coef *= scaleY;
-                beta0 = meanY - sparse_inner_product(coef, meanX);
+                if (!glm)
+                {
+                    beta0 = meanY - sparse_inner_product(coef, meanX);
+                } else
+                {
+                    beta0 = 0.0;
+                }
                 break;
             case 3:
                 elementwise_quot(coef, scaleX);
-                coef *= scaleY;
-                beta0 = meanY - sparse_inner_product(coef, meanX);
+                if (!glm)
+                {
+                    coef *= scaleY;
+                    beta0 = meanY - sparse_inner_product(coef, meanX);
+                } else
+                {
+                    beta0 = 0.0;
+                }
                 break;
             default:
                 break;

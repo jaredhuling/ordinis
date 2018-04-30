@@ -45,6 +45,8 @@
 #'                    are always returned on the original scale.
 #' @param maxit Maximum number of coordinate descent iterations.
 #' @param tol convergence tolerance parameter.
+#' @param maxit.irls Maximum number of coordinate descent iterations.
+#' @param tol.irls convergence tolerance parameter.
 #'
 #' @examples
 #' set.seed(123)
@@ -57,10 +59,16 @@
 #'
 #' ## fit lasso model with 100 tuning parameter values
 #' res <- ordinis(x, y)
+#'
+#' y2 <- 1 * (y > 0)
+#'
+#' resb <- ordinis(x, y2, family = "binomial")
+#'
 #' @export
 ordinis <- function(x,
                     y,
                     weights          = rep(1, NROW(y)),
+                    family           = c("gaussian", "binomial"),
                     penalty          = c("lasso", "mcp", "scad"),
                     lambda           = numeric(0),
                     alpha            = 1,
@@ -70,11 +78,12 @@ ordinis <- function(x,
                     lower.limits     = rep(-Inf, NCOL(x)),
                     nlambda          = 100L,
                     lambda.min.ratio = NULL,
-                    family           = c("gaussian", "binomial"),
                     intercept        = TRUE,
                     standardize      = TRUE,
                     maxit            = 5000L,
-                    tol              = 1e-4
+                    tol              = 1e-4,
+                    maxit.irls       = 100L,
+                    tol.irls         = 1e-4
 )
 {
 
@@ -97,6 +106,11 @@ ordinis <- function(x,
         {
             vnames <- paste0("V", 1:p)
         }
+    }
+
+    if (family == "binomial")
+    {
+        if (length(unique(y)) != 2) stop("y must only take 2 values")
     }
 
     if (penalty == "scad") warning("scad not implemented yet, reverting to lasso")
@@ -185,7 +199,9 @@ ordinis <- function(x,
     }
 
     maxit       <- as.integer(maxit[1])
-    tol         <- as.numeric(tol[1])
+    tol         <- as.double(tol[1])
+    maxit.irls  <- as.integer(maxit.irls[1])
+    tol.irls    <- as.double(tol.irls[1])
     alpha       <- as.double(alpha[1])
     gamma       <- as.double(gamma[1])
     penalty     <- as.character(penalty[1])
@@ -194,7 +210,9 @@ ordinis <- function(x,
                  tol         = tol,
                  alpha       = alpha,
                  gamma       = gamma,
-                 penalty     = penalty)
+                 penalty     = penalty,
+                 maxit.irls  = maxit.irls,
+                 tol.irls    = tol.irls)
 
     if (gamma <= 1) stop("gamma must be greater than 1")
 
@@ -222,7 +240,22 @@ ordinis <- function(x,
 
     } else if (family == "binomial")
     {
-        stop("Binomial not implemented yet")
+        stop("binomial not available yet")
+        res <- coord_ordinis_dense_glm_cpp(x,
+                                           y,
+                                           weights,
+                                           lambda,
+                                           penalty.factor,
+                                           rbind(upper.limits, lower.limits),
+                                           nlambda,
+                                           lambda.min.ratio,
+                                           standardize,
+                                           intercept,
+                                           opts
+        )
+        res$beta   <- res$beta[, 1:res$last, drop = FALSE]
+
+        res$beta   <- as(res$beta, "sparseMatrix")
     }
 
     rownames(res$beta) <- c("(Intercept)", vnames)

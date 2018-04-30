@@ -1,5 +1,5 @@
-#ifndef COORDGAUSSIANDENSE_H
-#define COORDGAUSSIANDENSE_H
+#ifndef COORDLOGISTICDENSE_H
+#define COORDLOGISTICDENSE_H
 
 #include "CoordBase.h"
 #include "utils.h"
@@ -16,7 +16,7 @@
 // b => y
 // f(x) => 1/2 * ||Ax - b||^2
 // g(z) => lambda * ||z||_1
-class CoordGaussianDense: public CoordBase<Eigen::SparseVector<double> > //Eigen::SparseVector<double>
+class CoordLogisticDense: public CoordBase<Eigen::SparseVector<double> > //Eigen::SparseVector<double>
 {
 protected:
     typedef float Scalar;
@@ -41,20 +41,27 @@ protected:
     Scalar lambda, lambda_ridge, gamma;  // L1 penalty
 
     double threshval;
-    VectorXd resid_cur;
+    VectorXd resid_cur, xbeta_cur, p, W, z;
 
     std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
+    bool intercept;
     MapMat limits;
     double alpha;
+    int maxit_irls;
+    double tol_irls;
     int penalty_factor_size;
 
     VectorXd XY;                    // X'Y
-    MatrixXd Xsq;                 // colSums(X^2)
+    VectorXd Xsq;                 // colSums(X^2)
 
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
     double lprev;
+
+    double beta0; // intercept
+
+    double weights_sum, resids_sum;
 
     // pointer we will set to one of the thresholding functions
     typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &denom);
@@ -78,6 +85,58 @@ protected:
         }
     }
     */
+
+    void update_gradient()
+    {
+
+    }
+
+    void initialize_params()
+    {
+        double ymean = (weights.array().sqrt() * datY.array()).matrix().mean();
+
+        beta0 = std::log(ymean / (1.0 - ymean));
+
+        xbeta_cur.fill(beta0);
+    }
+
+    void update_quadratic_approx()
+    {
+        p = 1.0 / (1.0 + (-1.0 * xbeta_cur.array().exp()));
+
+        resid_cur = weights.array().sqrt() * (datY.array() - p.array());
+
+        W = p.array() * (1 - p.array());
+
+        // make sure no weights are too small
+        for (int k = 0; k < nobs; ++k)
+        {
+            if (W(k) < 1e-5)
+            {
+                W(k) = 1e-5;
+            }
+        }
+
+        Xsq = (W.asDiagonal() * datX).array().square().colwise().sum();
+
+        weights_sum = weights.sum();
+    }
+
+    void update_intercept()
+    {
+        resids_sum = resid_cur.sum();
+
+        if (intercept)
+        {
+            double beta0_delta = resids_sum / weights_sum;
+
+            beta0 += beta0_delta;
+
+            resid_cur.array() -= beta0_delta * weights.array();
+
+            xbeta_cur.array() += beta0_delta;
+        }
+    }
 
     double compute_loss()
     {
@@ -125,13 +184,13 @@ protected:
     {
         if (penalty == "lasso")
         {
-            thresh_func = &CoordGaussianDense::soft_threshold;
+            thresh_func = &CoordLogisticDense::soft_threshold;
         } else if (penalty == "mcp")
         {
-            thresh_func = &CoordGaussianDense::mcp_threshold;
+            thresh_func = &CoordLogisticDense::mcp_threshold;
         } else
         {
-            thresh_func = &CoordGaussianDense::soft_threshold;
+            thresh_func = &CoordLogisticDense::soft_threshold;
         }
     }
 
@@ -148,7 +207,7 @@ protected:
             for (InIterVeci i_(eligible); i_; ++i_)
             {
                 int j = i_.index();
-                double beta_prev = beta.coeffRef( j ); //beta(j);
+                double beta_prev = beta.coeff( j ); //beta(j);
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
@@ -162,7 +221,11 @@ protected:
                 if (beta_prev != threshval)
                 {
                     beta.coeffRef(j)    = threshval;
-                    resid_cur -= (threshval - beta_prev) * datX.col(j);
+
+                    VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
+
+                    xbeta_cur += delta_cur;
+                    resid_cur.array() -= delta_cur.array() * W.array();
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -189,7 +252,11 @@ protected:
                 if (beta_prev != threshval)
                 {
                     beta.coeffRef(j) = threshval;
-                    resid_cur -= (threshval - beta_prev) * datX.col(j);
+
+                    VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
+
+                    xbeta_cur += delta_cur;
+                    resid_cur.array() -= delta_cur.array() * W.array();
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -198,6 +265,9 @@ protected:
                 }
             }
         }
+
+        // now update intercept if necessary
+        update_intercept();
 
     }
 
@@ -230,7 +300,11 @@ protected:
                     if (beta_prev != threshval)
                     {
                         beta.coeffRef(j)    = threshval;
-                        resid_cur -= (threshval - beta_prev) * datX.col(j);
+
+                        VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
+
+                        xbeta_cur += delta_cur;
+                        resid_cur.array() -= delta_cur.array() * W.array();
 
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -246,7 +320,7 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
+                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
 
@@ -259,7 +333,11 @@ protected:
                     if (beta_prev != threshval)
                     {
                         beta.coeffRef(j) = threshval;
-                        resid_cur -= (threshval - beta_prev) * datX.col(j);
+
+                        VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
+
+                        xbeta_cur += delta_cur;
+                        resid_cur.array() -= delta_cur.array() * W.array();
 
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -269,6 +347,9 @@ protected:
                 } // end eligible set check
             }
         }
+
+        // now update intercept if necessary
+        update_intercept();
 
     }
 
@@ -315,51 +396,58 @@ protected:
 
 
 public:
-    CoordGaussianDense(ConstGenericMatrix &datX_,
+    CoordLogisticDense(ConstGenericMatrix &datX_,
                        ConstGenericVector &datY_,
                        ConstGenericVector &weights_,
                        ArrayXd &penalty_factor_,
                        ConstGenericMatrix &limits_,
                        std::string &penalty_,
-                       double alpha_ = 1.0,
-                       double tol_ = 1e-6) :
+                       bool intercept_,
+                       double alpha_      = 1.0,
+                       double tol_        = 1e-6,
+                       int    maxit_irls_ = 100,
+                       double tol_irls_   = 1e-6) :
     CoordBase<Eigen::SparseVector<double> >
                 (datX_.rows(), datX_.cols(), tol_),
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
                                datY(datY_.data(), datY_.size()),
                                weights(weights_.data(), weights_.size()),
-                               resid_cur(datY_),  //assumes we start our beta estimate at 0
+                               resid_cur(datX_.rows()),
+                               xbeta_cur(datX_.rows()),
+                               p(datX_.rows()),
+                               W(datX_.rows()),
+                               z(datX_.rows()),
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
+                               intercept(intercept_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
-                               alpha(alpha_),
+                               alpha(alpha_), maxit_irls(maxit_irls_), tol_irls(tol_irls_),
                                penalty_factor_size(penalty_factor_.size()),
-                               XY(datX.transpose() * datY),
-                               Xsq((datX).array().square().colwise().sum())
+                               XY(datX.transpose() * (datY.array() * weights.array().sqrt()).matrix()),
+                               Xsq(datX_.cols())
     {}
 
     double get_lambda_zero()
     {
         if (penalty_factor_size > 0)
         {
-
+            VectorXd XXtmp = datX.transpose().rowwise().sum();
             lambda0 = 0;
             for (int i = 0; i < penalty_factor.size(); ++i)
             {
                 if (penalty_factor(i) != 0.0)
                 {
-                    double valcur = std::abs(XY(i)) / penalty_factor(i);
+                    double valcur = std::abs(XY(i) - 0.0 * XXtmp(i)) / penalty_factor(i);
 
                     if (valcur > lambda0) lambda0 = valcur;
                 }
             }
         } else
         {
-            lambda0 = XY.cwiseAbs().maxCoeff();
+            lambda0 = (XY - 0.0 * datX.transpose().rowwise().sum()).cwiseAbs().maxCoeff();
         }
 
         lambda0 /= ( alpha * 1.0 ); //std::pow(1e-6, 1.0/(99.0));
-
 
         return lambda0;
     }
@@ -380,9 +468,11 @@ public:
         eligible_set.setZero();
 
         eligible_set.reserve(std::min(nobs, nvars));
-        beta.reserve(std::min(nobs, nvars));
 
         nzero = 0;
+
+        // this starts estimate of intercept
+        initialize_params();
 
         double cutoff = 2.0 * lambda - lambda0;
 
@@ -433,41 +523,56 @@ public:
     int solve(int maxit)
     {
         //int i;
+        int irls_iter = 0;
 
-        int current_iter = 0;
-
-        // run once through all variables
-        current_iter++;
-        beta_prev = beta;
-        ineligible_set.fill(1);
-
-        update_beta(ineligible_set);
-
-        while(current_iter < maxit)
+        while(irls_iter < maxit_irls)
         {
-            while(current_iter < maxit)
-            {
-                current_iter++;
-                beta_prev = beta;
+            irls_iter++;
 
-                update_beta(eligible_set);
+            update_quadratic_approx();
 
-                if(converged()) break;
-            }
+            update_gradient();
 
+
+            int current_iter = 0;
+
+            // run once through all variables
             current_iter++;
             beta_prev = beta;
             ineligible_set.fill(1);
 
-            for (InIterVeci i_(eligible_set); i_; ++i_)
-            {
-                ineligible_set(i_.index()) = 0;
-            }
-
             update_beta(ineligible_set);
 
+            while(current_iter < maxit)
+            {
+                while(current_iter < maxit)
+                {
+                    current_iter++;
+                    beta_prev = beta;
+
+                    update_beta(eligible_set);
+
+                    if(converged()) break;
+                }
+
+                current_iter++;
+                beta_prev = beta;
+                ineligible_set.fill(1);
+
+                for (InIterVeci i_(eligible_set); i_; ++i_)
+                {
+                    ineligible_set(i_.index()) = 0;
+                }
+
+                update_beta(ineligible_set);
+
+                if(converged()) break;
+            } //end coordinate descent loop
+
             if(converged()) break;
-        }
+
+        } //end irls loop
+
 
         /*
         for (int j = 0; j < nvars; ++j)
@@ -475,7 +580,7 @@ public:
             if (beta(j) != 0)
                 ++nzero;
         }
-        */
+         */
 
 
         nzero = beta.nonZeros();
@@ -486,8 +591,10 @@ public:
 
         // print_footer();
 
-        return current_iter;
+        return irls_iter;
     }
+
+    virtual double get_intercept() { return beta0; }
 };
 
 
