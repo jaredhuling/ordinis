@@ -64,7 +64,7 @@ protected:
     double weights_sum, resids_sum;
 
     // pointer we will set to one of the thresholding functions
-    typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &denom);
+    typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom);
 
     thresh_func_ptr thresh_func;
 
@@ -207,24 +207,24 @@ protected:
         return (sum_squares + penalty_part);
     }
 
-    static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
+    static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
         if(value > penalty)
-            return( (value - penalty) / denom );
+            return( (value - penalty) / (denom + l2) );
         else if(value < -penalty)
-            return( (value + penalty) / denom );
+            return( (value + penalty) / (denom + l2) );
         else
             return(0);
     }
 
-    static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
+    static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
-        if (std::abs(value) > gamma * penalty)
+        if (std::abs(value) > gamma * penalty * denom)
             return(value / denom);
         else if(value > penalty)
-            return((value - penalty) / (denom - 1.0 / gamma) );
+            return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
         else if(value < -penalty)
-            return((value + penalty) / (denom - 1.0 / gamma));
+            return((value + penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
         else
             return(0);
     }
@@ -264,11 +264,11 @@ protected:
 
                 // surprisingly it's faster to calculate this on an iteration-basis
                 // and not pre-calculate it within each newton iteration..
-                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
+                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, lambda, gamma, (Xsq(j) + lambda_ridge));
+                threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -310,7 +310,7 @@ protected:
 
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -365,11 +365,11 @@ protected:
 
                     // surprisingly it's faster to calculate this on an iteration-basis
                     // and not pre-calculate it within each newton iteration..
-                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
+                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, lambda, gamma, (Xsq(j) + lambda_ridge));
+                    threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -413,7 +413,7 @@ protected:
 
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -554,8 +554,8 @@ public:
 
         beta.setZero();
 
-        lambda       = lambda_ * alpha;
-        lambda_ridge = lambda_ * (1.0 - alpha);
+        lambda       = lambda_ * alpha / double(nobs);
+        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
 
         gamma        = gamma_;
 
@@ -593,8 +593,8 @@ public:
     void init_warm(double lambda_, double gamma_)
     {
         lprev        = lambda;
-        lambda       = lambda_ * alpha;
-        lambda_ridge = lambda_ * (1.0 - alpha);
+        lambda       = lambda_ * alpha / double(nobs);
+        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
 
         gamma        = gamma_;
 
