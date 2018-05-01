@@ -80,8 +80,8 @@ ordinis <- function(x,
                     lambda.min.ratio = NULL,
                     intercept        = TRUE,
                     standardize      = TRUE,
-                    maxit            = 5000L,
-                    tol              = 1e-4,
+                    maxit            = ifelse(family == "gaussian", 5000L, 1000L),
+                    tol              = ifelse(family == "gaussian", 1e-4, 1e-3),
                     maxit.irls       = 100L,
                     tol.irls         = 1e-4
 )
@@ -111,6 +111,8 @@ ordinis <- function(x,
     if (family == "binomial")
     {
         if (length(unique(y)) != 2) stop("y must only take 2 values")
+
+        if (penalty != "lasso") warning("non-lasso penalties for non-gaussian responses are experimental")
     }
 
     if (penalty == "scad") warning("scad not implemented yet, reverting to lasso")
@@ -240,7 +242,7 @@ ordinis <- function(x,
 
     } else if (family == "binomial")
     {
-        stop("binomial not yet supported")
+
         res <- coord_ordinis_dense_glm_cpp(x,
                                            y,
                                            weights,

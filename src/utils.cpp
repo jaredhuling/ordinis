@@ -72,12 +72,13 @@ bool stopRule(const SparseVector& cur, const SparseVector& prev, const double& t
     const double *v1_val = cur.valuePtr(), *v2_val = prev.valuePtr();
     const int *v1_ind = cur.innerIndexPtr(), *v2_ind = prev.innerIndexPtr();
 
+    double eps = 1e-4;
     int i1 = 0, i2 = 0;
     while(i1 < n1 && i2 < n2)
     {
         if(v1_ind[i1] == v2_ind[i2])
         {
-            if (std::abs( (v1_val[i1] - v2_val[i2]) / v2_val[i2]) > tolerance)
+            if (std::abs( (v1_val[i1] - v2_val[i2]) / (std::abs(v2_val[i2]) + eps) ) > tolerance)
             {
                 return 0;
             } else
@@ -112,12 +113,15 @@ bool stopRule(SparseVector& cur, SparseVector& prev, const double& tolerance)
     const double *v1_val = cur.valuePtr(), *v2_val = prev.valuePtr();
     const int *v1_ind = cur.innerIndexPtr(), *v2_ind = prev.innerIndexPtr();
 
+
+    double eps = 1e-4;
+
     int i1 = 0, i2 = 0;
     while(i1 < n1 && i2 < n2)
     {
         if(v1_ind[i1] == v2_ind[i2])
         {
-            if (std::abs( (v1_val[i1] - v2_val[i2]) / v2_val[i2]) > tolerance)
+            if (std::abs( (v1_val[i1] - v2_val[i2]) / (std::abs(v2_val[i2]) + eps)) > tolerance)
             {
                 return 0;
             } else

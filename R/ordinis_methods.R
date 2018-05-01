@@ -503,7 +503,7 @@ plot.cv.ordinis <- function(x, sign.lambda = 1, ...)
     # modified from glmnet
     object = x
 
-    main.txt <- "Two Mountains CV"
+    main.txt <- ""
 
     xlab=expression(log(lambda))
     if(sign.lambda<0)xlab=paste("-",xlab,sep="")

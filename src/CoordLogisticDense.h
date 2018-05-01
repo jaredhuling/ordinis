@@ -105,7 +105,7 @@ protected:
     {
         p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
 
-        W = weights.array() * p.array() * (1 - p.array());
+        W = weights.array() * p.array() * (1.0 - p.array());
 
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
@@ -128,7 +128,7 @@ protected:
 
         if (intercept)
         {
-            resids_sum = (W.array() * resid_cur.array()).matrix().sum();
+            resids_sum = (resid_cur).sum();
 
             double beta0_delta = resids_sum / weights_sum;
 
@@ -235,7 +235,13 @@ protected:
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                     //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                    if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                } else
+                {
+                    if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                    {
+                        eligible_set.coeffRef(j) = 0;
+                    }
                 }
             }
         } else //if penalty multiplication factors are used
@@ -266,7 +272,13 @@ protected:
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                     //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                    if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                } else
+                {
+                    if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                    {
+                        eligible_set.coeffRef(j) = 0;
+                    }
                 }
             }
         }
@@ -314,7 +326,13 @@ protected:
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                         //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                        if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                        //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    } else
+                    {
+                        if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                        {
+                            eligible_set.coeffRef(j) = 0;
+                        }
                     }
                 } // end eligible set check
             }
@@ -347,7 +365,13 @@ protected:
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                         //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                        if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                        //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    } else
+                    {
+                        if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                        {
+                            eligible_set.coeffRef(j) = 0;
+                        }
                     }
                 } // end eligible set check
             }
@@ -425,7 +449,7 @@ public:
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_), maxit_irls(maxit_irls_), tol_irls(tol_irls_),
                                penalty_factor_size(penalty_factor_.size()),
-                               XY(datX.transpose() * (datY.array() * weights.array().sqrt()).matrix()),
+                               XY(datX.transpose() * (datY.array() * weights.array()).matrix()),
                                Xsq(datX_.cols())
     {}
 
@@ -482,13 +506,14 @@ public:
         double cutoff = 2.0 * lambda - lambda0;
 
 
+        /*
         if (penalty_factor_size < 1)
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff)) eligible_set.coeffRef(j) = 1;
         } else
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff * penalty_factor(j))) eligible_set.coeffRef(j) = 1;
-        }
+        }*/
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
 
@@ -511,15 +536,16 @@ public:
 
         double cutoff = (2.0 * lambda - lprev);
 
+
         /*
         if (penalty_factor_size < 1)
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) >  std::pow(nobs, 0.85) * (cutoff)) eligible_set(j) = 1;
+            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) >  (cutoff)) eligible_set.coeffRef(j) = 1;
         } else
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (std::pow(nobs, 0.85) * cutoff * penalty_factor(j))) eligible_set(j) = 1;
-        }
-         */
+            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > cutoff * penalty_factor(j)) eligible_set.coeffRef(j) = 1;
+        }*/
+
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
     }
@@ -530,11 +556,11 @@ public:
         //int i;
         int irls_iter = 0;
 
-        beta_prev_irls = beta;
-
         while(irls_iter < maxit_irls)
         {
             irls_iter++;
+
+            beta_prev_irls = beta;
 
             //xbeta_cur.array() = (datX * beta).array() + beta0; //this is efficient because beta is a sparse vector
 
@@ -591,7 +617,6 @@ public:
                 ++nzero;
         }
          */
-
 
         nzero = beta.nonZeros();
 

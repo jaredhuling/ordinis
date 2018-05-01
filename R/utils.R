@@ -8,7 +8,7 @@ lambda.interp=function(lambda,s){
     ### the new values are interpolated bewteen the two using the fraction
     ### Note: lambda decreases. you take:
     ### sfrac*left+(1-sfrac*right)
-    
+
     if(length(lambda)==1){# degenerate case of only one lambda
         nums=length(s)
         left=rep(1,nums)
@@ -32,18 +32,18 @@ lambda.interp=function(lambda,s){
 
 ## Taken from Jerome Friedman, Trevor Hastie, Noah Simon, and Rob Tibshirani's package glmnet
 ## https://cran.r-project.org/web/packages/glmnet/index.html
-nonzeroCoef = function (beta, bystep = FALSE) 
+nonzeroCoef = function (beta, bystep = FALSE)
 {
     ### bystep = FALSE means which variables were ever nonzero
     ### bystep = TRUE means which variables are nonzero for each step
     nr=nrow(beta)
     if (nr == 1) {#degenerate case
-        if (bystep) 
-            apply(beta, 2, function(x) if (abs(x) > 0) 
+        if (bystep)
+            apply(beta, 2, function(x) if (abs(x) > 0)
                 1
                 else NULL)
         else {
-            if (any(abs(beta) > 0)) 
+            if (any(abs(beta) > 0))
                 1
             else NULL
         }
@@ -57,7 +57,7 @@ nonzeroCoef = function (beta, bystep = FALSE)
         if (bystep) {
             if(length(which)>0){
                 beta=as.matrix(beta[which,,drop=FALSE])
-                nzel = function(x, which) if (any(x)) 
+                nzel = function(x, which) if (any(x))
                     which[x]
                 else NULL
                 which=apply(beta, 2, nzel, which)
@@ -70,7 +70,7 @@ nonzeroCoef = function (beta, bystep = FALSE)
                 names(which)=dn
                 which
             }
-            
+
         }
         else which
     }
@@ -87,7 +87,7 @@ argmin=function(x){
         c1=as.vector(outer(seq(d[1]),rep(1,d[2])))[imax]
         c2=as.vector(outer(rep(1,d[1]),seq(d[2])))[imax]
         c(c1,c2)
-        
+
     }
 }
 
@@ -172,3 +172,19 @@ error.bars <- function(x, upper, lower, width = 0.02, ...)
     range(upper, lower)
 }
 
+objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE)
+{
+    if (intercept)
+    {
+        beta0 <- beta[1]
+        beta  <- beta[-1]
+
+        xbeta <- drop(x %*% beta) + beta0
+    } else
+    {
+        xbeta <- drop(x %*% beta)
+    }
+    neglogLik <- (-sum(  y * xbeta  ) + sum( log1p(exp(xbeta)) )) / nrow(x)
+
+    neglogLik + sum(abs(beta) * lambda * penalty.factor)
+}
