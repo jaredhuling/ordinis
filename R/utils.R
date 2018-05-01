@@ -172,7 +172,7 @@ error.bars <- function(x, upper, lower, width = 0.02, ...)
     range(upper, lower)
 }
 
-objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE)
+objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE, alpha = 1)
 {
     if (intercept)
     {
@@ -186,5 +186,22 @@ objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(
     }
     neglogLik <- (-sum(  y * xbeta  ) + sum( log1p(exp(xbeta)) )) / nrow(x)
 
-    neglogLik + sum(abs(beta) * lambda * penalty.factor)
+    neglogLik + sum(abs(beta) * lambda * penalty.factor * alpha) + 0.5 * sum((beta) ^ 2 * lambda * penalty.factor * (1 - alpha))
+}
+
+objective_linear <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE, alpha = 1)
+{
+    if (intercept)
+    {
+        beta0 <- beta[1]
+        beta  <- beta[-1]
+
+        xbeta <- drop(x %*% beta) + beta0
+    } else
+    {
+        xbeta <- drop(x %*% beta)
+    }
+    sumsq <- 0.5 * sum(  (y - xbeta) ^ 2  ) / nrow(x)
+
+    sumsq + sum(abs(beta) * lambda * penalty.factor * alpha) + 0.5 * sum((beta) ^ 2 * lambda * penalty.factor * (1 - alpha))
 }

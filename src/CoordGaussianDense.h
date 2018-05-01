@@ -105,7 +105,7 @@ protected:
         else if(value < -penalty)
             return( (value + penalty) / denom );
         else
-            return(0);
+            return(0.0);
     }
 
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
@@ -117,7 +117,7 @@ protected:
         else if(value < -penalty)
             return((value + penalty) / (denom - 1.0 / gamma));
         else
-            return(0);
+            return(0.0);
     }
 
 
@@ -477,9 +477,10 @@ public:
         }
         */
 
+        // force zeros to be actual zeros
+        beta.prune(0.0);
 
         nzero = beta.nonZeros();
-
 
 
         loss = compute_loss();

@@ -691,6 +691,9 @@ public:
         }
          */
 
+        // force zeros to be actual zeros
+        beta.prune(0.0);
+
         nzero = beta.nonZeros();
 
 
