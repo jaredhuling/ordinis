@@ -79,6 +79,7 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     const double tol       = as<double>(opts["tol"]);
     const double alpha     = as<double>(opts["alpha"]);
     const double gamma     = as<double>(opts["gamma"]);
+    const int dfmax        = as<int>(opts["dfmax"]);
     const bool standardize = standardize_;
     const bool intercept   = intercept_;
 
@@ -135,7 +136,7 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
 
         lossvec(i) = solver->get_loss();
 
-        if (nzero > n && i > 0)
+        if (nzero > dfmax && i > 0)
         {
             last = i;
             break;

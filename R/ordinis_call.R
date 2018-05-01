@@ -43,6 +43,7 @@
 #' @param standardize Whether to standardize the design matrix before
 #'                    fitting the model. Default is \code{TRUE}. Fitted coefficients
 #'                    are always returned on the original scale.
+#' @param dfmax Maximum number of variables allowed in the model
 #' @param maxit Maximum number of coordinate descent iterations.
 #' @param tol convergence tolerance parameter.
 #' @param maxit.irls Maximum number of coordinate descent iterations.
@@ -80,6 +81,7 @@ ordinis <- function(x,
                     lambda.min.ratio = NULL,
                     intercept        = TRUE,
                     standardize      = TRUE,
+                    dfmax            = nvars,
                     maxit            = ifelse(family == "gaussian", 5000L, 500L),
                     tol              = ifelse(family == "gaussian", 1e-4, 1e-3),
                     maxit.irls       = 100L,
@@ -207,6 +209,7 @@ ordinis <- function(x,
     alpha       <- as.double(alpha[1])
     gamma       <- as.double(gamma[1])
     penalty     <- as.character(penalty[1])
+    dfmax       <- as.integer(dfmax[1])
 
     opts <- list(maxit       = maxit,
                  tol         = tol,
@@ -214,7 +217,8 @@ ordinis <- function(x,
                  gamma       = gamma,
                  penalty     = penalty,
                  maxit.irls  = maxit.irls,
-                 tol.irls    = tol.irls)
+                 tol.irls    = tol.irls,
+                 dfmax       = dfmax)
 
     if (gamma <= 1) stop("gamma must be greater than 1")
 

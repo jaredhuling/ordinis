@@ -9,8 +9,9 @@ ordinis(x, y, weights = rep(1, NROW(y)), family = c("gaussian", "binomial"),
   gamma = 3.7, penalty.factor = NULL, upper.limits = rep(Inf, NCOL(x)),
   lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
   lambda.min.ratio = NULL, intercept = TRUE, standardize = TRUE,
-  maxit = ifelse(family == "gaussian", 5000L, 500L), tol = ifelse(family ==
-  "gaussian", 1e-04, 0.001), maxit.irls = 100L, tol.irls = 0.001)
+  dfmax = nvars, maxit = ifelse(family == "gaussian", 5000L, 500L),
+  tol = ifelse(family == "gaussian", 1e-04, 0.001), maxit.irls = 100L,
+  tol.irls = 0.001)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -65,6 +66,8 @@ value is the same as \pkg{glmnet}: 0.0001 if
 \item{standardize}{Whether to standardize the design matrix before
 fitting the model. Default is \code{TRUE}. Fitted coefficients
 are always returned on the original scale.}
+
+\item{dfmax}{Maximum number of variables allowed in the model}
 
 \item{maxit}{Maximum number of coordinate descent iterations.}
 
