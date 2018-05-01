@@ -119,6 +119,10 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     IntegerVector niter(nlambda);
     double ilambda = 0.0;
 
+    double null_dev = 0.0;
+    VectorXd deviance(nlambda);
+    deviance.setZero();
+
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
@@ -134,6 +138,8 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
 
         SpVec res = solver->get_beta();
         int nzero = solver->get_nzero();
+        deviance(i) = solver->get_dev();
+
         double beta0 = 0.0;
         beta0 = solver->get_intercept();
         datstd.recover(beta0, res);
@@ -150,15 +156,19 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         }
     }
 
+    null_dev = solver->get_null_dev();
+
     delete solver;
 
     beta.makeCompressed();
 
-    return List::create(Named("beta")        = beta,
-                        Named("niter")       = niter,
-                        Named("lambda")      = lambda,
-                        Named("loss")        = lossvec,
-                        Named("last")        = last);
+    return List::create(Named("beta")          = beta,
+                        Named("niter")         = niter,
+                        Named("lambda")        = lambda,
+                        Named("loss")          = lossvec,
+                        Named("deviance")      = deviance,
+                        Named("null.deviance") = null_dev,
+                        Named("last")          = last);
 }
 
 // [[Rcpp::export]]

@@ -26,6 +26,8 @@ protected:
 
     int nzero;
 
+    double deviance, deviance_prev, null_dev;
+
     //virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
     virtual void next_beta(VecTypeBeta &res, SparseVectori &eligible) = 0;
     virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
@@ -35,9 +37,16 @@ protected:
         return (stopRule(beta, beta_prev, tol));
     }
 
-    virtual bool converged_irls()
+    bool converged_irls()
     {
-        return (stopRule(beta, beta_prev_irls, tol));
+        //return (stopRule(beta, beta_prev_irls, tol));
+        if (std::abs(deviance - deviance_prev) / (0.1 + std::abs(deviance)) < tol)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
     }
 
 
@@ -108,6 +117,8 @@ public:
     virtual VecTypeBeta get_beta() { return beta; }
     virtual int get_nzero() {return nzero;}
     double get_intercept() { return 0.0; }
+    double get_null_dev() { return null_dev; }
+    double get_dev() { return deviance; }
     virtual double get_loss() { return loss; }
 };
 

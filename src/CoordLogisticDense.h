@@ -86,6 +86,20 @@ protected:
     }
     */
 
+    bool converged_irls()
+    {
+        return (stopRule(beta, beta_prev_irls, tol_irls));
+        /*
+        if (std::abs(deviance - deviance_prev) / (0.1 + std::abs(deviance)) < tol_irls)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+         */
+    }
+
     void initialize_params()
     {
         double ymean = (weights.array() * datY.array()).matrix().mean();
@@ -99,6 +113,9 @@ protected:
         }
 
         xbeta_cur.fill(beta0);
+
+        // calculate null deviance
+        null_dev = (-1.0 * datY.array() * log(ymean) - (1.0 - datY.array()) * std::log(1.0 - ymean)).sum();
     }
 
     void update_quadratic_approx()
@@ -121,6 +138,34 @@ protected:
         Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
         weights_sum = W.sum();
+
+        // update deviance
+        for (int ii = 0; ii < nobs; ++ii)
+        {
+            if (datY(ii) == 1)
+            {
+                if (p(ii) > 1e-5)
+                {
+                    deviance -= std::log(p(ii));
+                } else
+                {
+                    // don't divide by zero
+                    deviance -= std::log(1e-5);
+                }
+
+            } else
+            {
+                if (p(ii) <= 1 - 1e-5)
+                {
+                    deviance -= std::log((1 - p(ii)));
+                } else
+                {
+                    // don't divide by zero
+                    deviance -= std::log(1 - 1e-5);
+                }
+
+            }
+        }
     }
 
     void update_intercept()

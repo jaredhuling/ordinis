@@ -80,10 +80,10 @@ ordinis <- function(x,
                     lambda.min.ratio = NULL,
                     intercept        = TRUE,
                     standardize      = TRUE,
-                    maxit            = ifelse(family == "gaussian", 5000L, 1000L),
+                    maxit            = ifelse(family == "gaussian", 5000L, 500L),
                     tol              = ifelse(family == "gaussian", 1e-4, 1e-3),
                     maxit.irls       = 100L,
-                    tol.irls         = 1e-4
+                    tol.irls         = 1e-3
 )
 {
 
