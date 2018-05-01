@@ -135,7 +135,9 @@ protected:
 
         resid_cur = weights.array() * (datY.array() - p.array()); // + xbeta_cur.array() * W.array().sqrt();
 
-        Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
+        //Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
+
+        Xsq.fill(-1.0);
 
         weights_sum = W.sum();
 
@@ -259,9 +261,14 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta.coeff( j ); //beta(j);
+
+                // surprisingly it's faster to calculate this on an iteration-basis
+                // and not pre-calculate it within each newton iteration..
+                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                threshval = thresh_func(grad, lambda, gamma, (Xsq(j) + lambda_ridge));
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -296,6 +303,11 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta.coeff( j ); //beta(j);
+
+                // surprisingly it's faster to calculate this on an iteration-basis
+                // and not pre-calculate it within each newton iteration..
+                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
@@ -350,9 +362,14 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
+
+                    // surprisingly it's faster to calculate this on an iteration-basis
+                    // and not pre-calculate it within each newton iteration..
+                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                    threshval = thresh_func(grad, lambda, gamma, (Xsq(j) + lambda_ridge));
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -389,6 +406,11 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
+
+                    // surprisingly it's faster to calculate this on an iteration-basis
+                    // and not pre-calculate it within each newton iteration..
+                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
