@@ -88,8 +88,8 @@ protected:
 
     bool converged_irls()
     {
-        return (stopRule(beta, beta_prev_irls, tol_irls));
-        /*
+        //return (stopRule(beta, beta_prev_irls, tol_irls));
+
         if (std::abs(deviance - deviance_prev) / (0.1 + std::abs(deviance)) < tol_irls)
         {
             return true;
@@ -97,7 +97,7 @@ protected:
         {
             return false;
         }
-         */
+
     }
 
     void initialize_params()
@@ -140,6 +140,7 @@ protected:
         weights_sum = W.sum();
 
         // update deviance
+        deviance = 0.0;
         for (int ii = 0; ii < nobs; ++ii)
         {
             if (datY(ii) == 1)
@@ -542,6 +543,8 @@ public:
 
         nzero = 0;
 
+        deviance = 0.0;
+
         xbeta_cur.setZero();
         resid_cur.setZero();
 
@@ -579,6 +582,8 @@ public:
 
         nzero = 0;
 
+        deviance = 0.0;
+
         double cutoff = (2.0 * lambda - lprev);
 
 
@@ -606,6 +611,7 @@ public:
             irls_iter++;
 
             beta_prev_irls = beta;
+            deviance_prev = deviance;
 
             //xbeta_cur.array() = (datX * beta).array() + beta0; //this is efficient because beta is a sparse vector
 

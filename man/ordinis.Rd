@@ -10,7 +10,7 @@ ordinis(x, y, weights = rep(1, NROW(y)), family = c("gaussian", "binomial"),
   lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
   lambda.min.ratio = NULL, intercept = TRUE, standardize = TRUE,
   maxit = ifelse(family == "gaussian", 5000L, 500L), tol = ifelse(family ==
-  "gaussian", 1e-04, 0.001), maxit.irls = 100L, tol.irls = 1e-04)
+  "gaussian", 1e-04, 0.001), maxit.irls = 100L, tol.irls = 0.001)
 }
 \arguments{
 \item{x}{The design matrix}
