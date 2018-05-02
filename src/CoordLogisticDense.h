@@ -190,6 +190,7 @@ protected:
 
             beta0             += beta0_delta;
 
+            // update the (weighted) working residual!
             resid_cur.array() -= beta0_delta * W.array();
 
             // update the linear predictor!
@@ -273,7 +274,7 @@ protected:
 
                 // surprisingly it's faster to calculate this on an iteration-basis
                 // and not pre-calculate it within each newton iteration..
-                if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
+                if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
                 grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
@@ -317,9 +318,9 @@ protected:
 
                 // surprisingly it's faster to calculate this on an iteration-basis
                 // and not pre-calculate it within each newton iteration..
-                if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().sum();
+                if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
+                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -378,7 +379,7 @@ protected:
 
                     // surprisingly it's faster to calculate this on an iteration-basis
                     // and not pre-calculate it within each newton iteration..
-                    if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
+                    if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
                     grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
@@ -424,9 +425,9 @@ protected:
 
                     // surprisingly it's faster to calculate this on an iteration-basis
                     // and not pre-calculate it within each newton iteration..
-                    if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().sum();
+                    if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
+                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 

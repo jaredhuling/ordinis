@@ -141,6 +141,14 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         int nzero = solver->get_nzero();
         deviance(i) = solver->get_dev();
 
+        if (i == 0) null_dev = solver->get_null_dev();
+
+        if ((nzero > dfmax || deviance(i) < 0.01 * null_dev) && i > 0 )
+        {
+            last = i - 1;
+            break;
+        }
+
         double beta0 = 0.0;
         beta0 = solver->get_intercept();
         datstd.recover(beta0, res);
@@ -149,15 +157,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         write_beta_matrix(beta, i, beta0, res);
 
         lossvec(i) = solver->get_loss();
-
-        if (nzero > dfmax && i > 0)
-        {
-            last = i;
-            break;
-        }
     }
-
-    null_dev = solver->get_null_dev();
 
     delete solver;
 
