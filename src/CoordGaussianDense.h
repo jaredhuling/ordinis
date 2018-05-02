@@ -111,7 +111,7 @@ protected:
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
         if (std::abs(value) > gamma * penalty * (denom + l2))
-            return(value / denom);
+            return(value / (denom + l2));
         else if(value > penalty)
             return((value - penalty) / (  (denom + l2 - 1.0 / gamma) ));
         else if(value < -penalty)
@@ -187,6 +187,11 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta.coeff( j ); //beta(j);
+
+                // surprisingly it's faster to calculate this on an iteration-basis
+                // and not pre-calculate it within each newton iteration..
+                if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
+
                 grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
@@ -274,6 +279,11 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
+
+                    // surprisingly it's faster to calculate this on an iteration-basis
+                    // and not pre-calculate it within each newton iteration..
+                    if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
+
                     grad = datX.col(j).dot(resid_cur) / double(nobs)  + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));

@@ -120,8 +120,10 @@ protected:
 
     void update_quadratic_approx()
     {
+        // calculate mean function
         p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
 
+        // construct weights and multiply by user-specified weights
         W = weights.array() * p.array() * (1.0 - p.array());
 
         // make sure no weights are too small
@@ -133,12 +135,18 @@ protected:
             }
         }
 
+        // here we update the residuals and multiply by user-specified weights, which
+        // will be multiplied by X. ie X'resid_cur = X'Wz, where z is the working response from IRLS
         resid_cur = weights.array() * (datY.array() - p.array()); // + xbeta_cur.array() * W.array().sqrt();
 
         //Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
+        // we will check this in later iterations
+        // and only update when Xsq(j) < 0
+        // (it's always positive, so this way we can check and avoid re-calculating unnecessarily)
         Xsq.fill(-1.0);
 
+        // this is needed for intercept updates
         weights_sum = W.sum();
 
         // update deviance
@@ -158,13 +166,13 @@ protected:
 
             } else
             {
-                if (p(ii) <= 1 - 1e-5)
+                if (p(ii) <= 1.0 - 1e-5)
                 {
-                    deviance -= std::log((1 - p(ii)));
+                    deviance -= std::log((1.0 - p(ii)));
                 } else
                 {
                     // don't divide by zero
-                    deviance -= std::log(1 - 1e-5);
+                    deviance -= std::log(1.0 - 1e-5);
                 }
 
             }
@@ -184,6 +192,7 @@ protected:
 
             resid_cur.array() -= beta0_delta * W.array();
 
+            // update the linear predictor!
             xbeta_cur.array() += beta0_delta;
         }
     }
@@ -220,7 +229,7 @@ protected:
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
         if (std::abs(value) > gamma * penalty * (denom + l2))
-            return(value / denom);
+            return(value / (denom + l2));
         else if(value > penalty)
             return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
         else if(value < -penalty)
@@ -274,8 +283,8 @@ protected:
                 if (threshval < limits(1,j)) threshval = limits(1,j);
                 if (threshval > limits(0,j)) threshval = limits(0,j);
 
-                // update residual if the coefficient changes after
-                // thresholding.
+                // update both residual and linear predictor
+                // if the coefficient changes after thresholding.
                 if (beta_prev != threshval)
                 {
                     beta.coeffRef(j)    = threshval;
@@ -291,6 +300,8 @@ protected:
                     //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
                 } else
                 {
+                    // here we only remove a variable from the eligible set
+                    // if it's zero twice in a row
                     if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
                     {
                         eligible_set.coeffRef(j) = 0;
@@ -316,8 +327,8 @@ protected:
                 if (threshval < limits(1,j)) threshval = limits(1,j);
                 if (threshval > limits(0,j)) threshval = limits(0,j);
 
-                // update residual if the coefficient changes after
-                // thresholding.
+                // update both residual and linear predictor
+                // if the coefficient changes after thresholding.
                 if (beta_prev != threshval)
                 {
                     beta.coeffRef(j) = threshval;
@@ -333,6 +344,8 @@ protected:
                     //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
                 } else
                 {
+                    // here we only remove a variable from the eligible set
+                    // if it's zero twice in a row
                     if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
                     {
                         eligible_set.coeffRef(j) = 0;
@@ -375,8 +388,8 @@ protected:
                     if (threshval < limits(1,j)) threshval = limits(1,j);
                     if (threshval > limits(0,j)) threshval = limits(0,j);
 
-                    // update residual if the coefficient changes after
-                    // thresholding.
+                    // update both residual and linear predictor
+                    // if the coefficient changes after thresholding.
                     if (beta_prev != threshval)
                     {
                         beta.coeffRef(j)    = threshval;
@@ -392,6 +405,8 @@ protected:
                         //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
                     } else
                     {
+                        // here we only remove a variable from the eligible set
+                        // if it's zero twice in a row
                         if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
                         {
                             eligible_set.coeffRef(j) = 0;
@@ -419,8 +434,8 @@ protected:
                     if (threshval < limits(1,j)) threshval = limits(1,j);
                     if (threshval > limits(0,j)) threshval = limits(0,j);
 
-                    // update residual if the coefficient changes after
-                    // thresholding.
+                    // update both residual and linear predictor
+                    // if the coefficient changes after thresholding.
                     if (beta_prev != threshval)
                     {
                         beta.coeffRef(j) = threshval;
@@ -436,6 +451,8 @@ protected:
                         //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
                     } else
                     {
+                        // here we only remove a variable from the eligible set
+                        // if it's zero twice in a row
                         if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
                         {
                             eligible_set.coeffRef(j) = 0;
@@ -655,7 +672,7 @@ public:
                     current_iter++;
                     beta_prev = beta;
 
-                    //update_quadratic_approx();
+                    update_quadratic_approx();
 
                     update_beta(eligible_set);
 
@@ -671,7 +688,7 @@ public:
                     ineligible_set(i_.index()) = 0;
                 }
 
-                //update_quadratic_approx();
+                update_quadratic_approx();
 
                 update_beta(ineligible_set);
 
