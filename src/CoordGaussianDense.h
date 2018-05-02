@@ -50,14 +50,14 @@ protected:
     int penalty_factor_size;
 
     VectorXd XY;                    // X'Y
-    MatrixXd Xsq;                 // colSums(X^2)
+    VectorXd Xsq;                 // colSums(X^2)
 
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
     double lprev;
 
     // pointer we will set to one of the thresholding functions
-    typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &denom);
+    typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom);
 
     thresh_func_ptr thresh_func;
 
@@ -98,26 +98,26 @@ protected:
         return (sum_squares + penalty_part);
     }
 
-    static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
+    static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
         if(value > penalty)
-            return( (value - penalty) / denom );
+            return( (value - penalty) / (denom + l2) );
         else if(value < -penalty)
-            return( (value + penalty) / denom );
+            return( (value + penalty) / (denom + l2) );
         else
-            return(0.0);
+            return(0);
     }
 
-    static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &denom)
+    static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
-        if (std::abs(value) > gamma * penalty)
+        if (std::abs(value) > gamma * penalty * (denom + l2))
             return(value / denom);
         else if(value > penalty)
-            return((value - penalty) / (denom - 1.0 / gamma) );
+            return((value - penalty) / (  (denom + l2 - 1.0 / gamma) ));
         else if(value < -penalty)
-            return((value + penalty) / (denom - 1.0 / gamma));
+            return((value + penalty) / (  (denom + l2 - 1.0 / gamma) ));
         else
-            return(0.0);
+            return(0);
     }
 
 
@@ -149,9 +149,14 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta.coeffRef( j ); //beta(j);
-                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                // surprisingly it's faster to calculate this on an iteration-basis
+                // and not pre-calculate it within each newton iteration..
+                if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
+
+                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+
+                threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -167,7 +172,13 @@ protected:
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                     //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                    if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                } else
+                {
+                    if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                    {
+                        eligible_set.coeffRef(j) = 0;
+                    }
                 }
             }
         } else //if penalty multiplication factors are used
@@ -176,9 +187,9 @@ protected:
             {
                 int j = i_.index();
                 double beta_prev = beta.coeff( j ); //beta(j);
-                grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
+                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
-                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
+                threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
                 //  apply param limits
                 if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -194,7 +205,13 @@ protected:
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                     //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                    if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                } else
+                {
+                    if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                    {
+                        eligible_set.coeffRef(j) = 0;
+                    }
                 }
             }
         }
@@ -217,9 +234,14 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j) ;
 
-                    threshval = thresh_func(grad, lambda, gamma, 1.0) / (Xsq(j) + lambda_ridge);
+                    // surprisingly it's faster to calculate this on an iteration-basis
+                    // and not pre-calculate it within each newton iteration..
+                    if (Xsq(j)  < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
+
+                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j) ;
+
+                    threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -235,7 +257,13 @@ protected:
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                         //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                        if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                        //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    } else
+                    {
+                        if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                        {
+                            eligible_set.coeffRef(j) = 0;
+                        }
                     }
                 } // end eligible set check
             }
@@ -246,9 +274,9 @@ protected:
                 if (eligible(j))
                 {
                     double beta_prev = beta.coeff( j ); //beta(j);
-                    grad = datX.col(j).dot(resid_cur)  + beta_prev * Xsq(j);
+                    grad = datX.col(j).dot(resid_cur) / double(nobs)  + beta_prev * Xsq(j);
 
-                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, 1.0) / (Xsq(j) + penalty_factor(j) * lambda_ridge);
+                    threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
                     //  apply param limits
                     if (threshval < limits(1,j)) threshval = limits(1,j);
@@ -264,7 +292,13 @@ protected:
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
                         //if (threshval == 0.0 && eligible_set(j) == 1 && beta_nz_prev(j) == 0) eligible_set(j) = 0;
-                        if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                        //if (threshval == 0.0 && eligible_set.coeff(j) == 1) eligible_set.coeffRef(j) = 0;
+                    } else
+                    {
+                        if (beta_prev == 0.0 && eligible_set.coeff(j) == 1)
+                        {
+                            eligible_set.coeffRef(j) = 0;
+                        }
                     }
                 } // end eligible set check
             }
@@ -328,14 +362,14 @@ public:
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
                                datY(datY_.data(), datY_.size()),
                                weights(weights_.data(), weights_.size()),
-                               resid_cur(datY_),  //assumes we start our beta estimate at 0
+                               resid_cur(datY_.array() * weights.array()),  //assumes we start our beta estimate at 0
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * datY),
-                               Xsq((datX).array().square().colwise().sum())
+                               Xsq(datX_.cols())
     {}
 
     double get_lambda_zero()
@@ -372,8 +406,8 @@ public:
 
         beta.setZero();
 
-        lambda       = lambda_ * alpha;
-        lambda_ridge = lambda_ * (1.0 - alpha);
+        lambda       = lambda_ * alpha / double(nobs);
+        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
 
         gamma        = gamma_;
 
@@ -384,7 +418,9 @@ public:
 
         nzero = 0;
 
-        double cutoff = 2.0 * lambda - lambda0;
+        Xsq.fill(-1.0);
+
+        double cutoff = 2.0 * lambda - lambda0 / double(nobs);
 
 
         if (penalty_factor_size < 1)
@@ -403,8 +439,8 @@ public:
     void init_warm(double lambda_, double gamma_)
     {
         lprev        = lambda;
-        lambda       = lambda_ * alpha;
-        lambda_ridge = lambda_ * (1.0 - alpha);
+        lambda       = lambda_ * alpha / double(nobs);
+        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
 
         gamma        = gamma_;
 
@@ -454,6 +490,8 @@ public:
 
                 if(converged()) break;
             }
+
+            // eligible_set.prune(0.0); // this just slows things down
 
             current_iter++;
             beta_prev = beta;

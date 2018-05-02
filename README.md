@@ -112,8 +112,8 @@ microbenchmark(
 
     ## Unit: seconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 4.188987 4.224132 4.288886 4.297551 4.301313 4.432446
-    ##  ordinis[lasso] 6.776044 6.806070 7.036123 7.011830 7.271921 7.314747
+    ##   glmnet[lasso] 4.629895 4.649994 4.747301 4.737460 4.815575 4.903581
+    ##  ordinis[lasso] 7.268944 7.443847 7.801698 7.656764 8.275512 8.363425
     ##  neval
     ##      5
     ##      5
@@ -137,8 +137,8 @@ microbenchmark(
 
     ## Unit: seconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 7.043160 7.134532 7.622043 7.248525 8.305858 8.378141
-    ##  ordinis[lasso] 6.682635 6.730448 7.529354 7.108582 7.738437 9.386667
+    ##   glmnet[lasso] 6.532366 6.649870 7.305065 7.146339 7.520697 8.676053
+    ##  ordinis[lasso] 7.016984 7.259523 7.349521 7.315843 7.335008 7.820248
     ##  neval
     ##      5
     ##      5
@@ -180,19 +180,19 @@ microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##            expr       min        lq      mean    median        uq
-    ##   glmnet[lasso]  219.1414  274.5992  352.6697  309.3719  392.6667
-    ##  ordinis[lasso] 1554.2739 1658.0530 1782.3042 1740.1213 1861.8684
-    ##        max neval
-    ##   567.5693     5
-    ##  2097.2041     5
+    ##            expr      min        lq      mean    median        uq       max
+    ##   glmnet[lasso]  220.027  221.6058  277.7351  244.7116  284.1925  418.1384
+    ##  ordinis[lasso] 1303.591 1435.5856 1462.0216 1485.7316 1508.1167 1577.0830
+    ##  neval
+    ##      5
+    ##      5
 
 ``` r
 # difference of results
 max(abs(coef(resg) - reso$beta))
 ```
 
-    ## [1] 0.001109771
+    ## [1] 0.001110245
 
 ``` r
 microbenchmark(
@@ -208,18 +208,18 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr       min        lq      mean    median        uq
-    ##   glmnet[lasso]  603.9843  682.5605  750.7674  801.9547  826.6033
-    ##  ordinis[lasso] 1448.1314 1451.7268 1705.1744 1783.5367 1803.8483
+    ##   glmnet[lasso]  484.7397  499.9091  538.0011  503.2165  545.2944
+    ##  ordinis[lasso] 1268.7060 1305.6607 1324.2607 1309.9756 1349.1776
     ##        max neval
-    ##   838.7343     5
-    ##  2038.6288     5
+    ##   656.8459     5
+    ##  1387.7837     5
 
 ``` r
 # difference of results
 max(abs(coef(resg) - reso$beta))
 ```
 
-    ## [1] 1.280118e-05
+    ## [1] 1.362165e-05
 
 ### Lasso (linear regression, ill-conditioned)
 
@@ -248,8 +248,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 188.9722 218.3615 236.9786 234.9423 241.3282 301.2888
-    ##  ordinis[lasso] 371.1704 394.5426 426.2207 410.3221 436.8171 518.2515
+    ##   glmnet[lasso] 174.0369 174.3248 204.6527 175.7893 177.5226 321.5896
+    ##  ordinis[lasso] 303.9057 318.3829 327.7781 319.0870 340.6411 356.8740
     ##  neval
     ##      5
     ##      5
@@ -273,8 +273,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 411.2623 416.0729 440.1107 435.6880 464.2040 473.3264
-    ##  ordinis[lasso] 329.0319 365.4790 388.0342 365.6153 374.1673 505.8777
+    ##   glmnet[lasso] 363.1798 372.2485 429.8894 423.5991 423.8096 566.6098
+    ##  ordinis[lasso] 328.9969 344.2587 397.0673 363.7217 455.1513 493.2079
     ##  neval
     ##      5
     ##      5

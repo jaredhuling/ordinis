@@ -219,7 +219,7 @@ protected:
 
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
-        if (std::abs(value) > gamma * penalty * denom)
+        if (std::abs(value) > gamma * penalty * (denom + l2))
             return(value / denom);
         else if(value > penalty)
             return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
@@ -264,7 +264,7 @@ protected:
 
                 // surprisingly it's faster to calculate this on an iteration-basis
                 // and not pre-calculate it within each newton iteration..
-                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().mean();
+                if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
                 grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
@@ -306,7 +306,7 @@ protected:
 
                 // surprisingly it's faster to calculate this on an iteration-basis
                 // and not pre-calculate it within each newton iteration..
-                if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+                if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().sum();
 
                 grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
@@ -365,7 +365,7 @@ protected:
 
                     // surprisingly it's faster to calculate this on an iteration-basis
                     // and not pre-calculate it within each newton iteration..
-                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().mean();
+                    if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
                     grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
@@ -409,7 +409,7 @@ protected:
 
                     // surprisingly it's faster to calculate this on an iteration-basis
                     // and not pre-calculate it within each newton iteration..
-                    if (Xsq(j) == -1.0) Xsq(j) = (datX.array().square() * W.array()).matrix().sum();
+                    if (Xsq(j) == -1.0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().sum();
 
                     grad = datX.col(j).dot(resid_cur) + beta_prev * Xsq(j);
 
@@ -573,7 +573,7 @@ public:
         // this starts estimate of intercept
         initialize_params();
 
-        double cutoff = 2.0 * lambda - lambda0;
+        double cutoff = 2.0 * lambda - lambda0 / double(nobs);
 
 
         /*
