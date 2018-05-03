@@ -227,6 +227,32 @@ protected:
             return(0);
     }
 
+    static double scad_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
+    {
+        double val_abs = std::abs(value);
+
+        if (val_abs <= penalty)
+            return(0.0);
+        else if (val_abs <= penalty * (1.0 + l2) + penalty)
+        {
+            if(value > penalty)
+                return((value - penalty) / (  denom + l2 ));
+            else
+                return((value + penalty) / (  denom + l2 ));
+        } else if (val_abs <= gamma * penalty * (denom + l2))
+        {
+            double gam_val = (gamma - 1.0) * value;
+            if ((gamma - 1.0) * value > gamma * penalty)
+                return( (value - gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
+            else
+                return( (value + gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
+        } else
+        {
+            return(value / (denom + denom * l2));
+        }
+
+    }
+
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
         if (std::abs(value) > gamma * penalty * (1.0 + l2))
@@ -250,7 +276,7 @@ protected:
             thresh_func = &CoordLogisticDense::mcp_threshold;
         } else
         {
-            thresh_func = &CoordLogisticDense::soft_threshold;
+            thresh_func = &CoordLogisticDense::scad_threshold;
         }
     }
 

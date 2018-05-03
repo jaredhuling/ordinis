@@ -117,8 +117,6 @@ ordinis <- function(x,
         if (penalty != "lasso") warning("non-lasso penalties for non-gaussian responses are experimental")
     }
 
-    if (penalty == "scad") warning("scad not implemented yet, reverting to lasso")
-
     ## taken from glmnet
     if(any(lower.limits>0)) { stop("Lower limits should be non-positive") }
     if(any(upper.limits<0)) { stop("Upper limits should be non-negative") }
