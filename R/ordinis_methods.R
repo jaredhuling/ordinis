@@ -571,7 +571,7 @@ logLik.ordinis <- function(object, REML = FALSE, ...) {
         logL <- -0.5 * n * (log(2 * pi) - log(rdf) + log(resid.ss)) - 0.5 * rdf
     } else if (object$family == "binomial")
     {
-        logL <- -1 * object$loss
+        logL <- -1 * object$deviance
     } else if (object$family == "poisson")
     {
         stop("poisson not complete yet")
