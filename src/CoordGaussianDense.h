@@ -231,7 +231,7 @@ protected:
                 if (beta_prev != threshval)
                 {
                     beta.coeffRef(j)    = threshval;
-                    resid_cur -= (threshval - beta_prev) * datX.col(j);
+                    resid_cur.array()  -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -268,8 +268,8 @@ protected:
                 // thresholding.
                 if (beta_prev != threshval)
                 {
-                    beta.coeffRef(j) = threshval;
-                    resid_cur -= (threshval - beta_prev) * datX.col(j);
+                    beta.coeffRef(j)   = threshval;
+                    resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -320,8 +320,8 @@ protected:
                     // thresholding.
                     if (beta_prev != threshval)
                     {
-                        beta.coeffRef(j)    = threshval;
-                        resid_cur -= (threshval - beta_prev) * datX.col(j);
+                        beta.coeffRef(j)   = threshval;
+                        resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -348,7 +348,7 @@ protected:
                     // and not pre-calculate it within each newton iteration..
                     if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) / double(nobs)  + beta_prev * Xsq(j);
+                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -360,8 +360,8 @@ protected:
                     // thresholding.
                     if (beta_prev != threshval)
                     {
-                        beta.coeffRef(j) = threshval;
-                        resid_cur -= (threshval - beta_prev) * datX.col(j);
+                        beta.coeffRef(j)   = threshval;
+                        resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
                         // update eligible set if necessary
                         if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -442,7 +442,7 @@ public:
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_),
                                penalty_factor_size(penalty_factor_.size()),
-                               XY(datX.transpose() * datY),
+                               XY(datX.transpose() * (datY.array() * weights.array()).matrix() ),
                                Xsq(datX_.cols())
     {}
 
