@@ -101,14 +101,14 @@ max(abs(coef(resg) - reso$beta))
 library(MASS)
 
 set.seed(123)
-n <- 100
+n <- 200
 p <- 10000
 m <- 20
-b <- matrix(c(runif(m), rep(0, p - m)))
+b <- matrix(c(runif(m, min = -0.5, max = 0.5), rep(0, p - m)))
 x <- matrix(rnorm(n * p, sd = 3), n, p)
 y <- 1 *(drop(x %*% b) + rnorm(n) > 0)
 
-lambdas = glmnet(x, y, family = "binomial")$lambda
+lambdas = glmnet(x, y, family = "binomial", lambda.min.ratio = 0.02)$lambda
 
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, family = "binomial",
@@ -116,7 +116,7 @@ microbenchmark(
                                       lambda = lambdas)},    
     "ordinis[lasso]"     = {reso <- ordinis(x, y, family = "binomial", 
                                             lambda = lambdas, 
-                                            tol = 1e-4, tol.irls = 1e-3)},
+                                            tol = 1e-3, tol.irls = 1e-3)},
     times = 5
 )
 
@@ -130,7 +130,7 @@ microbenchmark(
                                       lambda = lambdas)},    
     "ordinis[lasso]"     = {reso <- ordinis(x, y, family = "binomial", 
                                             lambda = lambdas, 
-                                            tol = 1e-4, tol.irls = 1e-3)},
+                                            tol = 1e-3, tol.irls = 1e-3)},
     times = 5
 )
 

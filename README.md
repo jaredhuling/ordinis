@@ -112,8 +112,8 @@ microbenchmark(
 
     ## Unit: seconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 4.068086 4.506337 4.612137 4.619056 4.888335 4.978867
-    ##  ordinis[lasso] 6.772194 6.852449 7.149605 7.196912 7.277830 7.648641
+    ##   glmnet[lasso] 3.501009 3.595614 3.628777 3.619587 3.639005 3.788671
+    ##  ordinis[lasso] 5.529184 5.607318 5.722507 5.747734 5.817231 5.911070
     ##  neval
     ##      5
     ##      5
@@ -136,12 +136,9 @@ microbenchmark(
 ```
 
     ## Unit: seconds
-    ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 6.485410 7.002350 7.185905 7.288964 7.388385 7.764417
-    ##  ordinis[lasso] 6.792322 7.172641 7.212399 7.203422 7.287446 7.606164
-    ##  neval
-    ##      5
-    ##      5
+    ##            expr      min       lq     mean  median       uq      max neval
+    ##   glmnet[lasso] 5.303708 5.348229 5.444795 5.43868 5.447399 5.685958     5
+    ##  ordinis[lasso] 4.997687 5.387264 5.439610 5.38856 5.529368 5.895168     5
 
 ``` r
 # difference of results
@@ -159,14 +156,14 @@ precision
 library(MASS)
 
 set.seed(123)
-n <- 100
+n <- 200
 p <- 10000
 m <- 20
-b <- matrix(c(runif(m), rep(0, p - m)))
+b <- matrix(c(runif(m, min = -0.5, max = 0.5), rep(0, p - m)))
 x <- matrix(rnorm(n * p, sd = 3), n, p)
 y <- 1 *(drop(x %*% b) + rnorm(n) > 0)
 
-lambdas = glmnet(x, y, family = "binomial")$lambda
+lambdas = glmnet(x, y, family = "binomial", lambda.min.ratio = 0.02)$lambda
 
 microbenchmark(
     "glmnet[lasso]" = {resg <- glmnet(x, y, family = "binomial",
@@ -174,15 +171,42 @@ microbenchmark(
                                       lambda = lambdas)},    
     "ordinis[lasso]"     = {reso <- ordinis(x, y, family = "binomial", 
                                             lambda = lambdas, 
-                                            tol = 1e-4, tol.irls = 1e-3)},
+                                            tol = 1e-3, tol.irls = 1e-3)},
     times = 5
 )
 ```
 
     ## Unit: milliseconds
-    ##            expr      min        lq      mean    median        uq       max
-    ##   glmnet[lasso]  222.111  224.0189  297.0341  274.5741  300.3046  464.1618
-    ##  ordinis[lasso] 1072.285 1075.2478 1227.5844 1232.2055 1255.8676 1502.3163
+    ##            expr       min        lq      mean    median        uq
+    ##   glmnet[lasso]  359.9668  360.5257  386.4771  392.7067  407.8602
+    ##  ordinis[lasso] 1102.3348 1115.1721 1146.3824 1139.3702 1178.0392
+    ##        max neval
+    ##   411.3262     5
+    ##  1196.9959     5
+
+``` r
+# difference of results
+max(abs(coef(resg) - reso$beta))
+```
+
+    ## [1] 0.0003735867
+
+``` r
+microbenchmark(
+    "glmnet[lasso]" = {resg <- glmnet(x, y, family = "binomial",
+                                      thresh = 1e-15,  
+                                      lambda = lambdas)},    
+    "ordinis[lasso]"     = {reso <- ordinis(x, y, family = "binomial", 
+                                            lambda = lambdas, 
+                                            tol = 1e-3, tol.irls = 1e-3)},
+    times = 5
+)
+```
+
+    ## Unit: milliseconds
+    ##            expr       min        lq      mean    median        uq      max
+    ##   glmnet[lasso]  706.4621  714.6566  748.8817  773.2778  774.5671  775.445
+    ##  ordinis[lasso] 1175.5004 1185.9353 1196.5767 1195.9374 1206.2661 1219.245
     ##  neval
     ##      5
     ##      5
@@ -192,34 +216,7 @@ microbenchmark(
 max(abs(coef(resg) - reso$beta))
 ```
 
-    ## [1] 0.001115328
-
-``` r
-microbenchmark(
-    "glmnet[lasso]" = {resg <- glmnet(x, y, family = "binomial",
-                                      thresh = 1e-15,  
-                                      lambda = lambdas)},    
-    "ordinis[lasso]"     = {reso <- ordinis(x, y, family = "binomial", 
-                                            lambda = lambdas, 
-                                            tol = 1e-4, tol.irls = 1e-3)},
-    times = 5
-)
-```
-
-    ## Unit: milliseconds
-    ##            expr       min        lq      mean    median        uq
-    ##   glmnet[lasso]  695.6214  707.1681  727.5538  734.7668  738.9008
-    ##  ordinis[lasso] 1181.7741 1279.8720 1397.4887 1414.4424 1451.0077
-    ##        max neval
-    ##   761.3117     5
-    ##  1660.3470     5
-
-``` r
-# difference of results
-max(abs(coef(resg) - reso$beta))
-```
-
-    ## [1] 1.784412e-05
+    ## [1] 2.525457e-05
 
 ### Lasso (linear regression, ill-conditioned)
 
@@ -247,9 +244,12 @@ microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##            expr      min       lq    mean   median       uq      max neval
-    ##   glmnet[lasso] 178.3964 179.2381 195.596 181.2329 188.7795 250.3333     5
-    ##  ordinis[lasso] 310.4257 311.7874 350.623 334.1088 367.5464 429.2466     5
+    ##            expr      min       lq     mean   median       uq      max
+    ##   glmnet[lasso] 157.1863 159.5061 162.5602 161.9867 162.5177 171.6042
+    ##  ordinis[lasso] 258.4410 275.3749 276.0255 280.6767 282.6790 282.9557
+    ##  neval
+    ##      5
+    ##      5
 
 ``` r
 # difference of results
@@ -270,8 +270,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 359.8810 368.9572 410.0425 379.4724 453.9490 487.9528
-    ##  ordinis[lasso] 341.5761 356.3402 440.2085 431.4433 497.3177 574.3651
+    ##   glmnet[lasso] 310.3223 320.9768 327.2284 324.7241 329.0584 351.0606
+    ##  ordinis[lasso] 265.8660 272.0515 272.2722 273.1462 274.7769 275.5202
     ##  neval
     ##      5
     ##      5

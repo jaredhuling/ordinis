@@ -220,12 +220,22 @@ protected:
 
     static double soft_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
+
+        if (std::abs(value) <= penalty)
+            return(0.0);
+        else if (value > penalty)
+            return( (value - penalty) / (denom + l2) );
+        else
+            return( (value + penalty) / (denom + l2) );
+
+        /* // this ordering is slower for high-dimensional problems
         if(value > penalty)
             return( (value - penalty) / (denom + l2) );
         else if(value < -penalty)
             return( (value + penalty) / (denom + l2) );
         else
-            return(0);
+            return(0.0);
+         */
     }
 
     static double scad_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
@@ -242,7 +252,6 @@ protected:
                 return((value + penalty) / (  denom + l2 ));
         } else if (val_abs <= gamma * penalty * (denom + l2))
         {
-            double gam_val = (gamma - 1.0) * value;
             if ((gamma - 1.0) * value > gamma * penalty)
                 return( (value - gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
             else
@@ -256,6 +265,20 @@ protected:
 
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
+        double val_abs = std::abs(value);
+
+        if (val_abs <= penalty)
+            return(0.0);
+        else if (val_abs <= gamma * penalty * (1.0 + l2))
+        {
+            if(value > penalty)
+                return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
+            else
+                return((value + penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
+        } else
+            return(value / (denom + denom * l2));
+
+        /*
         if (std::abs(value) > gamma * penalty * (1.0 + l2))
             return(value / (denom + denom * l2));
         else if(value > penalty)
@@ -263,7 +286,8 @@ protected:
         else if(value < -penalty)
             return((value + penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
         else
-            return(0);
+            return(0.0);
+         */
     }
 
 
