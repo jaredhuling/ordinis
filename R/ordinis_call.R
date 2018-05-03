@@ -8,6 +8,7 @@
 #' @param x The design matrix
 #' @param y The response vector
 #' @param weights a vector of weights of length equal to length of \code{y}
+#' @param offset
 #' @param penalty a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
 #' are available
 #' @param lambda A user provided sequence of \eqn{\lambda}. If set to
@@ -69,6 +70,7 @@
 ordinis <- function(x,
                     y,
                     weights          = rep(1, NROW(y)),
+                    offset           = NULL,
                     family           = c("gaussian", "binomial"),
                     penalty          = c("lasso", "mcp", "scad"),
                     lambda           = numeric(0),
@@ -108,6 +110,14 @@ ordinis <- function(x,
         {
             vnames <- paste0("V", 1:p)
         }
+    }
+
+    if (!is.null(offset))
+    {
+        if (length(offset) != n) stop("offset must be of same length as response")
+    } else
+    {
+        offset <- rep(0, n)
     }
 
     if (family == "binomial")
@@ -223,7 +233,7 @@ ordinis <- function(x,
     if (family == "gaussian")
     {
         res <- coord_ordinis_dense_cpp(x,
-                                       y,
+                                       y - drop(offset),
                                        weights,
                                        lambda,
                                        penalty.factor,
@@ -248,6 +258,7 @@ ordinis <- function(x,
         res <- coord_ordinis_dense_glm_cpp(x,
                                            y,
                                            weights,
+                                           drop(offset),
                                            lambda,
                                            penalty.factor,
                                            rbind(upper.limits, lower.limits),

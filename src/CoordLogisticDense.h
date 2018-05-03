@@ -37,6 +37,7 @@ protected:
     MapMat datX;                  // data matrix
     MapVec datY;                  // response vector
     MapVec weights;               // weight vector
+    MapVec offset;                // offset vector
 
     Scalar lambda, lambda_ridge, gamma;  // L1 penalty
 
@@ -112,7 +113,7 @@ protected:
             beta0 = 0.0;
         }
 
-        xbeta_cur.fill(beta0);
+        xbeta_cur.array() = offset.array() + beta0;
 
         // calculate null deviance
         null_dev = (-1.0 * datY.array() * log(ymean) - (1.0 - datY.array()) * std::log(1.0 - ymean)).sum();
@@ -537,6 +538,7 @@ public:
     CoordLogisticDense(ConstGenericMatrix &datX_,
                        ConstGenericVector &datY_,
                        ConstGenericVector &weights_,
+                       ConstGenericVector &offset_,
                        ArrayXd &penalty_factor_,
                        ConstGenericMatrix &limits_,
                        std::string &penalty_,
@@ -550,6 +552,7 @@ public:
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
                                datY(datY_.data(), datY_.size()),
                                weights(weights_.data(), weights_.size()),
+                               offset(offset_.data(), offset_.size()),
                                resid_cur(datX_.rows()),
                                xbeta_cur(datX_.rows()),
                                p(datX_.rows()),

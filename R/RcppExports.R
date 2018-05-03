@@ -5,7 +5,7 @@ coord_ordinis_dense_cpp <- function(x, y, weights, lambda, penalty_factor, limit
     .Call(`_ordinis_coord_ordinis_dense_cpp`, x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts)
 }
 
-coord_ordinis_dense_glm_cpp <- function(x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts) {
-    .Call(`_ordinis_coord_ordinis_dense_glm_cpp`, x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts)
+coord_ordinis_dense_glm_cpp <- function(x, y, weights, offset, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts) {
+    .Call(`_ordinis_coord_ordinis_dense_glm_cpp`, x, y, weights, offset, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts)
 }
 

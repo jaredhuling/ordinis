@@ -37,6 +37,7 @@ inline void write_beta_matrix(SpMat &betas, int col, double beta0, SpVec &coef)
 List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
                              Rcpp::NumericVector y_,
                              Rcpp::NumericVector weights_,
+                             Rcpp::NumericVector offset_,
                              Rcpp::NumericVector lambda_,
                              Rcpp::NumericVector penalty_factor_,
                              Rcpp::NumericMatrix limits_,
@@ -53,12 +54,14 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     MatrixXd datX(n, p);
     VectorXd datY(n);
     VectorXd weights(n);
+    VectorXd offset(n);
     MatrixXd limits(2, p);
 
     // Copy data and convert type from double to float
     std::copy(x_.begin(), x_.end(), datX.data());
     std::copy(y_.begin(), y_.end(), datY.data());
     std::copy(weights_.begin(), weights_.end(), weights.data());
+    std::copy(offset_.begin(), offset_.end(), offset.data());
 
     std::copy(limits_.begin(), limits_.end(), limits.data());
 
@@ -92,7 +95,8 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
 
     CoordLogisticDense *solver;
     solver = new CoordLogisticDense(datX, datY,
-                                    weights, penalty_factor,
+                                    weights, offset,
+                                    penalty_factor,
                                     limits, penalty[0],
                                     intercept, alpha,
                                     tol, maxit_irls, tol_irls);
@@ -176,6 +180,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
 List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x,
                                  Rcpp::NumericVector y,
                                  Rcpp::NumericVector weights,
+                                 Rcpp::NumericVector offset,
                                  Rcpp::NumericVector lambda,
                                  Rcpp::NumericVector penalty_factor,
                                  Rcpp::NumericMatrix limits,
@@ -185,7 +190,8 @@ List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x,
                                  bool intercept,
                                  List opts)
 {
-    return coord_ordinis_dense_glm(x, y, weights, lambda, penalty_factor,
+    return coord_ordinis_dense_glm(x, y, weights, offset,
+                                   lambda, penalty_factor,
                                    limits,
                                    nlambda,
                                    lmin_ratio,

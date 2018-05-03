@@ -28,14 +28,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // coord_ordinis_dense_glm_cpp
-List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x, Rcpp::NumericVector y, Rcpp::NumericVector weights, Rcpp::NumericVector lambda, Rcpp::NumericVector penalty_factor, Rcpp::NumericMatrix limits, int nlambda, double lmin_ratio, bool standardize, bool intercept, List opts);
-RcppExport SEXP _ordinis_coord_ordinis_dense_glm_cpp(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP lambdaSEXP, SEXP penalty_factorSEXP, SEXP limitsSEXP, SEXP nlambdaSEXP, SEXP lmin_ratioSEXP, SEXP standardizeSEXP, SEXP interceptSEXP, SEXP optsSEXP) {
+List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x, Rcpp::NumericVector y, Rcpp::NumericVector weights, Rcpp::NumericVector offset, Rcpp::NumericVector lambda, Rcpp::NumericVector penalty_factor, Rcpp::NumericMatrix limits, int nlambda, double lmin_ratio, bool standardize, bool intercept, List opts);
+RcppExport SEXP _ordinis_coord_ordinis_dense_glm_cpp(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP offsetSEXP, SEXP lambdaSEXP, SEXP penalty_factorSEXP, SEXP limitsSEXP, SEXP nlambdaSEXP, SEXP lmin_ratioSEXP, SEXP standardizeSEXP, SEXP interceptSEXP, SEXP optsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offset(offsetSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type penalty_factor(penalty_factorSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type limits(limitsSEXP);
@@ -44,14 +45,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type standardize(standardizeSEXP);
     Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
     Rcpp::traits::input_parameter< List >::type opts(optsSEXP);
-    rcpp_result_gen = Rcpp::wrap(coord_ordinis_dense_glm_cpp(x, y, weights, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts));
+    rcpp_result_gen = Rcpp::wrap(coord_ordinis_dense_glm_cpp(x, y, weights, offset, lambda, penalty_factor, limits, nlambda, lmin_ratio, standardize, intercept, opts));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ordinis_coord_ordinis_dense_cpp", (DL_FUNC) &_ordinis_coord_ordinis_dense_cpp, 11},
-    {"_ordinis_coord_ordinis_dense_glm_cpp", (DL_FUNC) &_ordinis_coord_ordinis_dense_glm_cpp, 11},
+    {"_ordinis_coord_ordinis_dense_glm_cpp", (DL_FUNC) &_ordinis_coord_ordinis_dense_glm_cpp, 12},
     {NULL, NULL, 0}
 };
 
