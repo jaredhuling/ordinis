@@ -229,8 +229,8 @@ protected:
 
     static double mcp_threshold(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom)
     {
-        if (std::abs(value) > gamma * penalty * (denom + l2))
-            return(value / (denom + l2));
+        if (std::abs(value) > gamma * penalty * (1.0 + l2))
+            return(value / (denom + denom * l2));
         else if(value > penalty)
             return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
         else if(value < -penalty)

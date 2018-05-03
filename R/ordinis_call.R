@@ -262,6 +262,8 @@ ordinis <- function(x,
         res$beta   <- res$beta[, 1:res$last, drop = FALSE]
 
         res$beta   <- as(res$beta, "sparseMatrix")
+
+        res$deviance   <- res$deviance[1:res$last]
     }
 
     rownames(res$beta) <- c("(Intercept)", vnames)

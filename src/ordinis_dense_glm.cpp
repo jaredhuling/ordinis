@@ -115,7 +115,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     beta.reserve(Eigen::VectorXi::Constant(nlambda, std::min(n, p)));
 
     //MatrixXd beta(p + 1, nlambda);
-    VectorXd lossvec(nlambda);
+    //VectorXd lossvec(nlambda);
 
     IntegerVector niter(nlambda);
     double ilambda = 0.0;
@@ -156,7 +156,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         //beta.block(1, i, p, 1) = res;
         write_beta_matrix(beta, i, beta0, res);
 
-        lossvec(i) = solver->get_loss();
+        //lossvec(i) = solver->get_loss();
     }
 
     delete solver;
@@ -166,7 +166,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     return List::create(Named("beta")          = beta,
                         Named("niter")         = niter,
                         Named("lambda")        = lambda,
-                        Named("loss")          = lossvec,
+                        //Named("loss")          = lossvec,
                         Named("deviance")      = deviance,
                         Named("null.deviance") = null_dev,
                         Named("last")          = last);
