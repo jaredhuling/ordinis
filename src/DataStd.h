@@ -80,7 +80,7 @@ public:
             scaleX.resize(p);
     }
 
-    void standardize(MatrixXd &X, Vector &Y)
+    void standardize(MatrixXd &X, Vector &Y, MatrixXd &limits)
     {
         double n_invsqrt = 1.0 / std::sqrt(Double(n));
 
@@ -117,6 +117,7 @@ public:
                     //X.col(i).array() *=  wts.array();
                     scaleX[i] = sd_n(X.col(i));
                     X.col(i).array() *= (1.0 / scaleX[i]);
+                    limits.col(i).array() *= (scaleX[i]);
                 }
                 break;
             case 2:
@@ -125,6 +126,7 @@ public:
                     //X.col(i).array() *=  wts.array();
                     meanX[i] = X.col(i).mean();
                     X.col(i).array() -= meanX[i];
+                    //limits.col(i).array() -= meanX[i];
                 }
                 break;
             case 3:
@@ -141,6 +143,13 @@ public:
                     std::transform(begin, end, begin, std::bind2nd(std::minus<double>(), meanX[i]));
                     scaleX[i] = X.col(i).norm() * n_invsqrt;
                     std::transform(begin, end, begin, std::bind2nd(std::multiplies<double>(), 1.0 / scaleX[i]));
+
+                    limits.col(i).array() *= scaleX[i];
+                    //double *beginll = &limits(0, i);
+                    //double *endll = begin + 2;
+                    //X.col(i).array() *=  wts.array();
+                    //std::transform(begin, endll, beginll, std::bind2nd(std::plus<double>(), meanX[i]));
+                    //std::transform(begin, endll, beginll, std::bind2nd(std::multiplies<double>(), scaleX[i]));
                 }
                 break;
             default:
@@ -148,7 +157,7 @@ public:
         }
     }
 
-    void standardize(MatrixXd &X, Vector &Y, Vector &wts)
+    void standardize(MatrixXd &X, Vector &Y, MatrixXd &limits, Vector &wts)
     {
         double n_invsqrt = 1.0 / std::sqrt(Double(n));
 

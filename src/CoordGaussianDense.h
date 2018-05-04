@@ -44,6 +44,7 @@ protected:
     VectorXd resid_cur;
 
     std::string penalty;
+    bool intercept;
     ArrayXd penalty_factor;       // penalty multiplication factors
     MapMat limits;
     double alpha;
@@ -55,6 +56,8 @@ protected:
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
     double lprev;
+
+    double beta0, weights_sum, resids_sum;
 
     // pointer we will set to one of the thresholding functions
     typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom);
@@ -78,6 +81,22 @@ protected:
         }
     }
     */
+
+    void update_intercept()
+    {
+
+        if (intercept)
+        {
+            resids_sum = (resid_cur).sum();
+
+            double beta0_delta = resids_sum / weights_sum;
+
+            beta0             += beta0_delta;
+
+            // update the (weighted) working residual!
+            resid_cur.array() -= beta0_delta * weights.array();
+        }
+    }
 
     double compute_loss()
     {
@@ -104,9 +123,9 @@ protected:
         if (std::abs(value) <= penalty)
             return(0.0);
         else if (value > penalty)
-            return( (value - penalty) / (denom + l2) );
+            return( (value - penalty) / (denom + denom * l2) );
         else
-            return( (value + penalty) / (denom + l2) );
+            return( (value + penalty) / (denom + denom * l2) );
 
         /* // this ordering is slower for high-dimensional problems
         if(value > penalty)
@@ -203,6 +222,9 @@ protected:
     void next_beta(SparseVector &res, SparseVectori &eligible)
     {
 
+        // now update intercept if necessary
+        update_intercept();
+
         int j;
         double grad;
 
@@ -290,6 +312,9 @@ protected:
     //void next_beta(Vector &res, VectorXi &eligible)
     void next_beta(SparseVector &res, VectorXi &eligible)
     {
+
+        // now update intercept if necessary
+        update_intercept();
 
         int j;
         double grad;
@@ -429,6 +454,7 @@ public:
                        ArrayXd &penalty_factor_,
                        ConstGenericMatrix &limits_,
                        std::string &penalty_,
+                       bool   intercept_,
                        double alpha_ = 1.0,
                        double tol_ = 1e-6) :
     CoordBase<Eigen::SparseVector<double> >
@@ -438,6 +464,7 @@ public:
                                weights(weights_.data(), weights_.size()),
                                resid_cur(datY_.array() * weights.array()),  //assumes we start our beta estimate at 0
                                penalty(penalty_),
+                               intercept(intercept_),
                                penalty_factor(penalty_factor_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_),
@@ -491,12 +518,16 @@ public:
         beta.reserve(std::min(nobs, nvars));
 
         nzero = 0;
+        beta0 = 0.0;
 
         Xsq.fill(-1.0);
+
+        weights_sum = weights.sum();
 
         double cutoff = 2.0 * lambda - lambda0 / double(nobs);
 
 
+        /*
         if (penalty_factor_size < 1)
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff)) eligible_set.coeffRef(j) = 1;
@@ -504,6 +535,7 @@ public:
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff * penalty_factor(j))) eligible_set.coeffRef(j) = 1;
         }
+         */
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
 
@@ -520,7 +552,7 @@ public:
 
         eligible_set.setZero();
 
-        eligible_set.reserve(std::min(nobs, nvars));
+        eligible_set.reserve(std::min(nobs * 2, nvars));
 
         nzero = 0;
 
@@ -601,6 +633,8 @@ public:
 
         return current_iter;
     }
+
+    virtual double get_intercept() { return beta0; }
 };
 
 

@@ -39,7 +39,7 @@ mod <- ordinis(x, y,
                penalty = "mcp",
                lower.limits = rep(0, p), # force all coefficients to be positive
                penalty.factor = c(0, 0, rep(1, p-2)), # don't penalize first two coefficients
-               alpha = 0.5)  # use elastic net with alpha = 0.5
+               alpha = 0.95)  # use elastic net with alpha = 0.95
 
 plot(mod)
 
@@ -179,3 +179,48 @@ microbenchmark(
 max(abs(coef(resg) - reso$beta))
 
 ```
+
+### Validity of solutions with various bells and whistles
+
+Due to internal differences in standardization, we now compare with `glmnet` when using observation weights, penalty scaling factors, and parameter box constraints
+
+```{r}
+
+set.seed(123)
+n = 200
+p = 1000
+m <- 15
+b = c(runif(m, min = -0.5, max = 0.5), rep(0, p - m))
+x = (matrix(rnorm(n * p, sd = 3), n, p))
+y = drop(x %*% b) + rnorm(n)
+y2 <- 1 * (y > rnorm(n, mean = 0.5, sd = 3))
+
+
+wts <- runif(nrow(x))
+wts <- wts / mean(wts) # re-scale like glmnet does, so we can compare
+
+penalty.factor <- rbinom(ncol(x), 1, 0.99) * runif(ncol(x)) * 5
+penalty.factor <- (penalty.factor / sum(penalty.factor)) * ncol(x)  # re-scale like glmnet does, so we can compare
+
+system.time(resb <- ordinis(x, y2, family = "binomial", tol = 1e-7, tol.irls = 1e-5,
+                            penalty = "lasso",
+                            alpha = 0.5,  #elastic net term
+                            lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
+                            standardize = FALSE, intercept = FALSE,
+                            weights = wts, # observation weights
+                            penalty.factor = penalty.factor)) # penalty scaling factors
+
+system.time(resg <- glmnet(x,y2, family = "binomial",
+                           lambda = resb$lambda,
+                           alpha = 0.5, #elastic net term
+                           weights = wts, # observation weights
+                           penalty.factor = penalty.factor, # penalty scaling factors
+                           lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
+                           standardize = FALSE, intercept = FALSE,
+                           thresh = 1e-16))
+
+## compare solutions
+max(abs(resb$beta[-1,] - resg$beta))
+
+```
+

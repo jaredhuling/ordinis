@@ -85,17 +85,20 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
 
     std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
 
-    DataStd<double> datstd(n, p, standardize, intercept, false);
-    datstd.standardize(datX, datY);
+    DataStd<double> datstd(n, p, standardize, intercept, true);
+    datstd.standardize(datX, datY, limits);
 
 
     CoordGaussianDense *solver;
-    solver = new CoordGaussianDense(datX, datY, weights, penalty_factor, limits, penalty[0], alpha, tol);
+    solver = new CoordGaussianDense(datX, datY, weights, penalty_factor,
+                                    limits, penalty[0],
+                                    intercept,
+                                    alpha, tol);
 
     if (nlambda < 1)
     {
         double lmax = 0.0;
-        lmax = solver->get_lambda_zero() / double(n) * datstd.get_scaleY();
+        lmax = solver->get_lambda_zero() / double(n); // * datstd.get_scaleY();
 
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
@@ -117,7 +120,7 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
-        ilambda = lambda[i] * double(n) / datstd.get_scaleY();
+        ilambda = lambda[i] * double(n); // / datstd.get_scaleY();
 
         if(i == 0)
             solver->init(ilambda, gamma);
@@ -128,6 +131,7 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
         SpVec res = solver->get_beta();
         int nzero = solver->get_nzero();
         double beta0 = 0.0;
+        beta0 = solver->get_intercept();
         datstd.recover(beta0, res);
         //beta(0,i) = beta0;
         //beta.block(1, i, p, 1) = res;

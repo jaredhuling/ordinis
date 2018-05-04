@@ -91,7 +91,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
 
     DataStd<double> datstd(n, p, standardize, intercept, true);
-    datstd.standardize(datX, datY);
+    datstd.standardize(datX, datY, limits);
 
     CoordLogisticDense *solver;
     solver = new CoordLogisticDense(datX, datY,

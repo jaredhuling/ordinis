@@ -18,7 +18,8 @@ ordinis(x, y, weights = rep(1, NROW(y)), offset = NULL,
 
 \item{y}{The response vector}
 
-\item{weights}{a vector of weights of length equal to length of \code{y}}
+\item{weights}{a vector of weights of length equal to length of \code{y}. \code{weights} are NOT standardized or scaled; the user must
+do this if desired}
 
 \item{family}{family of underlying model. Only "gaussian" for continuous responses is available now}
 
@@ -40,7 +41,7 @@ It is recommended to set this parameter to be \code{NULL}
 \item{gamma}{parameter for MCP/SCAD}
 
 \item{penalty.factor}{a vector with length equal to the number of columns in x to be multiplied by lambda. by default
-it is a vector of 1s}
+it is a vector of 1s. \code{penalty.factor} is NOT scaled}
 
 \item{upper.limits}{a vector of length \code{ncol(x)} of upper limits for each coefficient. Can be a single value, which will
 then be applied for each coefficient. Must be non-negative.}

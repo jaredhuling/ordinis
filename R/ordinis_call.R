@@ -7,7 +7,8 @@
 #'
 #' @param x The design matrix
 #' @param y The response vector
-#' @param weights a vector of weights of length equal to length of \code{y}
+#' @param weights a vector of weights of length equal to length of \code{y}. \code{weights} are NOT standardized or scaled; the user must
+#' do this if desired
 #' @param offset
 #' @param penalty a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
 #' are available
@@ -23,7 +24,7 @@
 #' @param alpha mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge
 #' @param gamma parameter for MCP/SCAD
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
-#'                      it is a vector of 1s
+#'                      it is a vector of 1s. \code{penalty.factor} is NOT scaled
 #' @param upper.limits a vector of length \code{ncol(x)} of upper limits for each coefficient. Can be a single value, which will
 #' then be applied for each coefficient. Must be non-negative.
 #' @param lower.limits a vector of length \code{ncol(x)} of lower limits for each coefficient. Can be a single value, which will
@@ -183,7 +184,7 @@ ordinis <- function(x,
 
     if(is.null(lambda.min.ratio))
     {
-        lmr_val <- ifelse(nrow(x) < ncol(x), 0.01, 0.0001)
+        lmr_val <- ifelse(nrow(x) < ncol(x), 0.05, 0.001)
     } else
     {
         lmr_val <- as.numeric(lambda.min.ratio)
