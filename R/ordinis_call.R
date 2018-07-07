@@ -9,7 +9,7 @@
 #' @param y The response vector
 #' @param weights a vector of weights of length equal to length of \code{y}. \code{weights} are NOT standardized or scaled; the user must
 #' do this if desired
-#' @param offset
+#' @param offset A vector of length \code{nobs} that is included in the linear predictor
 #' @param penalty a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
 #' are available
 #' @param lambda A user provided sequence of \eqn{\lambda}. If set to

@@ -21,6 +21,8 @@ ordinis(x, y, weights = rep(1, NROW(y)), offset = NULL,
 \item{weights}{a vector of weights of length equal to length of \code{y}. \code{weights} are NOT standardized or scaled; the user must
 do this if desired}
 
+\item{offset}{A vector of length \code{nobs} that is included in the linear predictor}
+
 \item{family}{family of underlying model. Only "gaussian" for continuous responses is available now}
 
 \item{penalty}{a string indicating which penalty to use. \code{"lasso"}, \code{"MCP"}, and \code{"SCAD"}
