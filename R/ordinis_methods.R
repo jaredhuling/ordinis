@@ -311,7 +311,7 @@ cv.cdgaussian <- function(outlist,lambda,x,y,foldid,type.measure,grouped,keep=FA
 #' plot(fit)
 #'
 plot.ordinis <- function(x,
-                         xvar = c("loglambda", "lambda", "penalty"),
+                         xvar = c("loglambda", "lambda", "norm"),
                          labsize = 0.6,
                          xlab = iname, ylab = NULL,
                          main = x$penalty,

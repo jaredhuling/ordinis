@@ -30,7 +30,7 @@ protected:
 
     //virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
     virtual void next_beta(VecTypeBeta &res, SparseVectori &eligible) = 0;
-    virtual void next_beta(VecTypeBeta &res, VectorXi &eligible) = 0;
+    virtual void next_beta(VecTypeBeta &res, VectorXi &eligible)      = 0;
 
     virtual bool converged()
     {
@@ -115,11 +115,11 @@ public:
     }
 
     virtual VecTypeBeta get_beta() { return beta; }
-    virtual int get_nzero() {return nzero;}
-    double get_intercept() { return 0.0; }
-    double get_null_dev() { return null_dev; }
-    double get_dev() { return deviance; }
-    virtual double get_loss() { return loss; }
+    virtual int get_nzero()        { return nzero; }
+    double get_intercept()         { return 0.0; }
+    double get_null_dev()          { return null_dev; }
+    double get_dev()               { return deviance; }
+    virtual double get_loss()      { return loss; }
 };
 
 

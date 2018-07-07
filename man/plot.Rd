@@ -5,7 +5,7 @@
 \alias{plot.cv.ordinis}
 \title{Plot method for ordinis fitted objects}
 \usage{
-\method{plot}{ordinis}(x, xvar = c("loglambda", "lambda", "penalty"),
+\method{plot}{ordinis}(x, xvar = c("loglambda", "lambda", "norm"),
   labsize = 0.6, xlab = iname, ylab = NULL, main = x$penalty,
   xlim = NULL, n.print = 10L, ...)
 

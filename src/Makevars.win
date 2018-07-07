@@ -1,0 +1,16 @@
+
+## OLD
+#PKG_CPPFLAGS = -I${R_HOME}/library/RcppEigen/include \
+#-I${R_HOME}/library/Rcpp/include -I. -DNDEBUG
+
+#PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+## old
+
+
+#PKG_LIBS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" --vanilla -e "Rcpp:::LdFlags()") $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_LIBS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" --vanilla -e "Rcpp:::LdFlags()") $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
+
+PKG_CPPFLAGS = -I. -DNDEBUG
+
+CXX_STD = CXX11

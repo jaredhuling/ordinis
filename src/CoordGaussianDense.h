@@ -123,9 +123,9 @@ protected:
         if (std::abs(value) <= penalty)
             return(0.0);
         else if (value > penalty)
-            return( (value - penalty) / (denom + denom * l2) );
+            return( (value - penalty) / (denom + l2) );
         else
-            return( (value + penalty) / (denom + denom * l2) );
+            return( (value + penalty) / (denom + l2) );
 
         /* // this ordering is slower for high-dimensional problems
         if(value > penalty)
@@ -185,11 +185,11 @@ protected:
         else if (val_abs <= gamma * penalty * (1.0 + l2))
         {
             if(value > penalty)
-                return((value - penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
+                return((value - penalty) / ( denom * (1.0 - 1.0 / gamma) + l2 ));
             else
-                return((value + penalty) / ( denom * (1.0 + l2 - 1.0 / gamma) ));
+                return((value + penalty) / ( denom * (1.0 - 1.0 / gamma) + l2 ));
         } else
-            return(value / (denom + denom * l2));
+            return(value / (denom + 1.0 * l2));
 
         /*
         if (std::abs(value) > gamma * penalty * (1.0 + l2))
@@ -201,8 +201,8 @@ protected:
         else
         return(0.0);
         */
-    }
 
+    }
 
     void set_threshold_func()
     {
@@ -240,13 +240,13 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                 //  apply param limits
-                if (threshval < limits(1,j)) threshval = limits(1,j);
-                if (threshval > limits(0,j)) threshval = limits(0,j);
+                if (threshval < limits(1, j)) threshval = limits(1, j);
+                if (threshval > limits(0, j)) threshval = limits(0, j);
 
                 // update residual if the coefficient changes after
                 // thresholding.
@@ -278,13 +278,13 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
                 //  apply param limits
-                if (threshval < limits(1,j)) threshval = limits(1,j);
-                if (threshval > limits(0,j)) threshval = limits(0,j);
+                if (threshval < limits(1, j)) threshval = limits(1, j);
+                if (threshval > limits(0, j)) threshval = limits(0, j);
 
                 // update residual if the coefficient changes after
                 // thresholding.
@@ -338,8 +338,8 @@ protected:
                     threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
                     //  apply param limits
-                    if (threshval < limits(1,j)) threshval = limits(1,j);
-                    if (threshval > limits(0,j)) threshval = limits(0,j);
+                    if (threshval < limits(1, j)) threshval = limits(1, j);
+                    if (threshval > limits(0, j)) threshval = limits(0, j);
 
                     // update residual if the coefficient changes after
                     // thresholding.
@@ -456,7 +456,7 @@ public:
                        std::string &penalty_,
                        bool   intercept_,
                        double alpha_ = 1.0,
-                       double tol_ = 1e-6) :
+                       double tol_   = 1e-6) :
     CoordBase<Eigen::SparseVector<double> >
                 (datX_.rows(), datX_.cols(), tol_),
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
@@ -469,7 +469,7 @@ public:
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_),
                                penalty_factor_size(penalty_factor_.size()),
-                               XY(datX.transpose() * (datY.array() * weights.array()).matrix() ),
+                               XY((datX.transpose() * (datY.array() * weights.array()).matrix()) ),
                                Xsq(datX_.cols())
     {}
 
@@ -493,7 +493,8 @@ public:
             lambda0 = XY.cwiseAbs().maxCoeff();
         }
 
-        lambda0 /= ( alpha * 1.0 ); //std::pow(1e-6, 1.0/(99.0));
+        lambda0 /= ( alpha * 1.0 * double(nobs)); //std::pow(1e-6, 1.0/(99.0));
+
 
 
         return lambda0;
@@ -507,8 +508,8 @@ public:
 
         beta.setZero();
 
-        lambda       = lambda_ * alpha / double(nobs);
-        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
 
         gamma        = gamma_;
 
@@ -524,7 +525,7 @@ public:
 
         weights_sum = weights.sum();
 
-        double cutoff = 2.0 * lambda - lambda0 / double(nobs);
+        double cutoff = 2.0 * lambda - lambda0;
 
 
         /*
@@ -545,9 +546,8 @@ public:
     void init_warm(double lambda_, double gamma_)
     {
         lprev        = lambda;
-        lambda       = lambda_ * alpha / double(nobs);
-        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
-
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
         gamma        = gamma_;
 
         eligible_set.setZero();
@@ -597,8 +597,6 @@ public:
                 if(converged()) break;
             }
 
-            // eligible_set.prune(0.0); // this just slows things down
-
             current_iter++;
             beta_prev = beta;
             ineligible_set.fill(1);
@@ -613,18 +611,17 @@ public:
             if(converged()) break;
         }
 
-        /*
-        for (int j = 0; j < nvars; ++j)
-        {
-            if (beta(j) != 0)
-                ++nzero;
-        }
-        */
-
         // force zeros to be actual zeros
         beta.prune(0.0);
-
         nzero = beta.nonZeros();
+
+        /*
+         for (int j = 0; j < nvars; ++j)
+         {
+         if (beta(j) != 0)
+         ++nzero;
+         }
+         */
 
 
         loss = compute_loss();

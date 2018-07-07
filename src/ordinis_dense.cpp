@@ -90,7 +90,8 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
 
 
     CoordGaussianDense *solver;
-    solver = new CoordGaussianDense(datX, datY, weights, penalty_factor,
+    solver = new CoordGaussianDense(datX, datY, weights,
+                                    penalty_factor,
                                     limits, penalty[0],
                                     intercept,
                                     alpha, tol);
@@ -98,11 +99,11 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     if (nlambda < 1)
     {
         double lmax = 0.0;
-        lmax = solver->get_lambda_zero() / double(n); // * datstd.get_scaleY();
+        lmax = solver->get_lambda_zero(); // * datstd.get_scaleY();
 
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
-        lambda = lambda.exp();
+        lambda  = lambda.exp();
         nlambda = lambda.size();
     }
 
@@ -114,21 +115,23 @@ List coord_ordinis_dense(Rcpp::NumericMatrix x_,
     //MatrixXd beta(p + 1, nlambda);
     VectorXd lossvec(nlambda);
 
+
     IntegerVector niter(nlambda);
     double ilambda = 0.0;
 
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
-        ilambda = lambda[i] * double(n); // / datstd.get_scaleY();
+        ilambda = lambda[i]; // * double(n); // / datstd.get_scaleY();
 
         if(i == 0)
             solver->init(ilambda, gamma);
         else
             solver->init_warm(ilambda, gamma);
 
-        niter[i] = solver->solve(maxit);
+        niter[i]  = solver->solve(maxit);
         SpVec res = solver->get_beta();
+
         int nzero = solver->get_nzero();
         double beta0 = 0.0;
         beta0 = solver->get_intercept();
@@ -170,7 +173,9 @@ List coord_ordinis_dense_cpp(Rcpp::NumericMatrix x,
                              bool intercept,
                              List opts)
 {
-    return coord_ordinis_dense(x, y, weights, lambda, penalty_factor,
+    return coord_ordinis_dense(x, y, weights,
+                               lambda,
+                               penalty_factor,
                                limits,
                                nlambda,
                                lmin_ratio,
