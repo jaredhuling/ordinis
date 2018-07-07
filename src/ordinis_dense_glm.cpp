@@ -132,7 +132,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     for(int i = 0; i < nlambda; i++)
     {
 
-        ilambda = lambda[i] * double(n);
+        ilambda = lambda[i];
 
         if(i == 0)
             solver->init(ilambda, gamma);

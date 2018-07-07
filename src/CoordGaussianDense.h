@@ -146,19 +146,18 @@ protected:
         else if (val_abs <= penalty * (1.0 + l2) + penalty)
         {
             if(value > penalty)
-                return((value - penalty) / (  denom + l2 ));
+                return((value - penalty) / (  denom + denom * l2 ));
             else
-                return((value + penalty) / (  denom + l2 ));
-        } else if (val_abs <= gamma * penalty * (denom + l2))
+                return((value + penalty) / (  denom + denom * l2 ));
+        } else if (val_abs <= gamma * penalty * (1.0 + l2))
         {
-            double gam_val = (gamma - 1.0) * value;
             if ((gamma - 1.0) * value > gamma * penalty)
                 return( (value - gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
             else
                 return( (value + gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
         } else
         {
-            return(value / (denom + l2));
+            return(value / (denom + denom * l2));
         }
 
     }
@@ -185,11 +184,11 @@ protected:
         else if (val_abs <= gamma * penalty * (1.0 + l2))
         {
             if(value > penalty)
-                return((value - penalty) / ( denom * (1.0 - 1.0 / gamma) + l2 ));
+                return((value - penalty) / ( denom * (1.0 - 1.0 / gamma + l2) ));
             else
-                return((value + penalty) / ( denom * (1.0 - 1.0 / gamma) + l2 ));
+                return((value + penalty) / ( denom * (1.0 - 1.0 / gamma + l2) ));
         } else
-            return(value / (denom + 1.0 * l2));
+            return(value / (denom + denom * l2));
 
         /*
         if (std::abs(value) > gamma * penalty * (1.0 + l2))
@@ -252,6 +251,7 @@ protected:
                 // thresholding.
                 if (beta_prev != threshval)
                 {
+                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
                     beta.coeffRef(j)    = threshval;
                     resid_cur.array()  -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
@@ -290,6 +290,7 @@ protected:
                 // thresholding.
                 if (beta_prev != threshval)
                 {
+                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
                     beta.coeffRef(j)   = threshval;
                     resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
@@ -345,6 +346,7 @@ protected:
                     // thresholding.
                     if (beta_prev != threshval)
                     {
+                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
                         beta.coeffRef(j)   = threshval;
                         resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 
@@ -385,6 +387,7 @@ protected:
                     // thresholding.
                     if (beta_prev != threshval)
                     {
+                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
                         beta.coeffRef(j)   = threshval;
                         resid_cur.array() -= (threshval - beta_prev) * datX.col(j).array() * weights.array();
 

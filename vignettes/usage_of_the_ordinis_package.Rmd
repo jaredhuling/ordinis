@@ -1,0 +1,86 @@
+---
+title: "Usage of the ordinis Package"
+author: "Jared Huling"
+date: "`r Sys.Date()`"
+output: 
+    rmarkdown::html_vignette:
+        fig_width: 7
+        fig_height: 5
+        toc: true
+        toc_depth: 3
+        number_sections: true
+        self_contained: true
+vignette: >
+  %\VignetteIndexEntry{Usage of the ordinis Package}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+
+
+# Introduction to `ordinis`
+
+
+## Fitting penalized regression models
+
+
+```{r fit_model}
+
+library(ordinis)
+
+
+set.seed(1)
+n <- 100
+p <- 1000
+m <- 10
+b <- matrix(c(runif(m, min = -1), rep(0, p - m)))
+x <- matrix(rnorm(n * p, sd = 3), n, p)
+y <- drop(x %*% b) + rnorm(n)
+
+# fitting a linear model with an MCP penalty
+mod <- ordinis(x, y, 
+               penalty = "mcp",
+               gamma = 1.4)  # additional tuning param for MCP
+
+plot(mod)
+
+# now applying positivity constraints to parameters and adding a ridge penalty
+mod2 <- ordinis(x, y, 
+                penalty = "mcp",
+                gamma = 1.4,  # additional tuning param for MCP
+                lower.limits = rep(0, p), # force all coefficients to be positive
+                penalty.factor = c(0, 0, rep(1, p-2)), # don't penalize first two coefficients
+                alpha = 0.5)  # use elastic net with alpha = 0.95
+
+plot(mod2)
+
+# use cross validation to select lambda tuning parameter
+cvmod <- cv.ordinis(x, y, penalty = "mcp", gamma = 1.4)
+
+plot(cvmod)
+
+# return coefficients with min cv-MSE
+coef <- predict(cvmod, type = "coef", s = "lambda.min")
+
+# use cross validation to select lambda tuning parameter
+cvmodl1 <- cv.ordinis(x, y, penalty = "lasso")
+
+# return coefficients with min cv-MSE
+coefl1 <- predict(cvmodl1, type = "coef", s = "lambda.min")
+
+plot(cvmodl1)
+
+# number selected by MCP
+sum(coef[-1] != 0)
+
+# number selected by lasso
+sum(coefl1[-1] != 0)
+
+# MCP
+round(coef[2:11], 3)
+
+# truth
+round(b[1:10], 3)
+
+# lasso
+round(coefl1[2:11], 3)
+```

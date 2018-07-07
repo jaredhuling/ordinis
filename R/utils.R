@@ -189,6 +189,63 @@ objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(
     neglogLik + sum(abs(beta) * lambda * penalty.factor * alpha) + 0.5 * sum((beta) ^ 2 * lambda * penalty.factor * (1 - alpha))
 }
 
+objective_logistic <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE, alpha = 1,
+                             penalty = c("lasso", "mcp", "scad"), gamma = 3.7)
+{
+    penalty <- match.arg(penalty)
+    if (intercept)
+    {
+        beta0 <- beta[1]
+        beta  <- beta[-1]
+
+        xbeta <- drop(x %*% beta) + beta0
+    } else
+    {
+        xbeta <- drop(x %*% beta)
+    }
+    neglogLik <- (-sum(  y * xbeta  ) + sum( log1p(exp(xbeta)) )) / nrow(x)
+
+    if (penalty == "lasso")
+    {
+        penalty.part <- sum(abs(beta) * lambda * penalty.factor * alpha)
+    } else if (penalty == "mcp")
+    {
+        penalty.part <- 0
+        for (j in 1:length(beta))
+        {
+            pen.cur <- penalty.factor[j] * lambda * alpha
+            b <- beta[j]
+            if (abs(b) <= gamma * pen.cur)
+            {
+                penalty.part <- penalty.part + pen.cur * abs(b) - b ^ 2 / (2 * gamma)
+            } else
+            {
+                penalty.part <- penalty.part + 0.5 * (gamma) * pen.cur ^ 2
+            }
+        }
+    } else
+    {
+        penalty.part <- 0
+        for (j in 1:length(beta))
+        {
+            pen.cur <- penalty.factor[j] * lambda * alpha
+            b <- beta[j]
+            if (abs(b) <= pen.cur)
+            {
+                penalty.part <- penalty.part + pen.cur * abs(b)
+            } else if (abs(b) <= gamma * pen.cur)
+            {
+                penalty.part <- penalty.part - (abs(b) ^ 2 - 2 * gamma * pen.cur * abs(b) + pen.cur ^ 2) / (2 * (gamma - 1))
+            } else
+            {
+                penalty.part <- penalty.part + 0.5 * (gamma + 1) * pen.cur ^ 2
+            }
+        }
+    }
+
+    neglogLik + penalty.part + 0.5 * sum((beta) ^ 2 * lambda * penalty.factor * (1 - alpha))
+}
+
 objective_linear <- function(beta, x, y, lambda, penalty.factor = rep(1, ncol(x)), intercept = FALSE, alpha = 1,
                              penalty = c("lasso", "mcp", "scad"), gamma = 3.7)
 {

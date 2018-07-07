@@ -224,9 +224,9 @@ protected:
         if (std::abs(value) <= penalty)
             return(0.0);
         else if (value > penalty)
-            return( (value - penalty) / (denom + l2) );
+            return( (value - penalty) / (denom + denom * l2) );
         else
-            return( (value + penalty) / (denom + l2) );
+            return( (value + penalty) / (denom + denom * l2) );
 
         /* // this ordering is slower for high-dimensional problems
         if(value > penalty)
@@ -247,10 +247,10 @@ protected:
         else if (val_abs <= penalty * (1.0 + l2) + penalty)
         {
             if(value > penalty)
-                return((value - penalty) / (  denom + l2 ));
+                return((value - penalty) / (  denom + denom * l2 ));
             else
-                return((value + penalty) / (  denom + l2 ));
-        } else if (val_abs <= gamma * penalty * (denom + l2))
+                return((value + penalty) / (  denom + denom * l2 ));
+        } else if (val_abs <= gamma * penalty * (1.0 + l2))
         {
             if ((gamma - 1.0) * value > gamma * penalty)
                 return( (value - gamma * penalty / (gamma - 1.0)) / (denom * ( 1.0 - 1.0 / (gamma - 1.0) + l2 )) );
@@ -339,6 +339,9 @@ protected:
                 // if the coefficient changes after thresholding.
                 if (beta_prev != threshval)
                 {
+
+                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+
                     beta.coeffRef(j)    = threshval;
 
                     VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
@@ -383,6 +386,9 @@ protected:
                 // if the coefficient changes after thresholding.
                 if (beta_prev != threshval)
                 {
+
+                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+
                     beta.coeffRef(j) = threshval;
 
                     VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
@@ -444,6 +450,9 @@ protected:
                     // if the coefficient changes after thresholding.
                     if (beta_prev != threshval)
                     {
+
+                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+
                         beta.coeffRef(j)    = threshval;
 
                         VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
@@ -490,6 +499,9 @@ protected:
                     // if the coefficient changes after thresholding.
                     if (beta_prev != threshval)
                     {
+
+                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+
                         beta.coeffRef(j) = threshval;
 
                         VectorXd delta_cur = (threshval - beta_prev) * datX.col(j);
@@ -612,7 +624,7 @@ public:
             lambda0 = (XY).cwiseAbs().maxCoeff();
         }
 
-        lambda0 /= ( alpha * 1.0 ); //std::pow(1e-6, 1.0/(99.0));
+        lambda0 /= ( alpha * 1.0 * double(nobs)); //std::pow(1e-6, 1.0/(99.0));
 
         return lambda0;
     }
@@ -625,8 +637,8 @@ public:
 
         beta.setZero();
 
-        lambda       = lambda_ * alpha / double(nobs);
-        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
 
         gamma        = gamma_;
 
@@ -644,7 +656,7 @@ public:
         // this starts estimate of intercept
         initialize_params();
 
-        double cutoff = 2.0 * lambda - lambda0 / double(nobs);
+        double cutoff = 2.0 * lambda - lambda0;
 
 
         /*
@@ -664,8 +676,8 @@ public:
     void init_warm(double lambda_, double gamma_)
     {
         lprev        = lambda;
-        lambda       = lambda_ * alpha / double(nobs);
-        lambda_ridge = lambda_ * (1.0 - alpha) / double(nobs);
+        lambda       = lambda_ * alpha;
+        lambda_ridge = lambda_ * (1.0 - alpha);
 
         gamma        = gamma_;
 
