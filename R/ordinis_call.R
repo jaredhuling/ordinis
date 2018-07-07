@@ -22,7 +22,7 @@
 #'                      It is recommended to set this parameter to be \code{NULL}
 #'                      (the default).
 #' @param alpha mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge
-#' @param gamma parameter for MCP/SCAD
+#' @param gamma parameter for MCP/SCAD. Defaults to the recommended values from the papers corresponding to each penalty
 #' @param penalty.factor a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 #'                      it is a vector of 1s. \code{penalty.factor} is NOT scaled
 #' @param upper.limits a vector of length \code{ncol(x)} of upper limits for each coefficient. Can be a single value, which will
@@ -38,8 +38,8 @@
 #'                                argument. This parameter is only used when
 #'                                the program calculates its own \eqn{\lambda}
 #'                                (by setting \code{lambda = NULL}). The default
-#'                                value is the same as \pkg{glmnet}: 0.0001 if
-#'                                \code{nrow(x) >= ncol(x)} and 0.01 otherwise.
+#'                                value is the same as \pkg{glmnet}: 0.001 if
+#'                                \code{nrow(x) >= ncol(x)} and 0.05 otherwise.
 #' @param family family of underlying model. Only "gaussian" for continuous responses is available now
 #' @param intercept Whether to fit an intercept in the model. Default is \code{TRUE}.
 #' @param standardize Whether to standardize the design matrix before
@@ -76,7 +76,7 @@ ordinis <- function(x,
                     penalty          = c("lasso", "mcp", "scad"),
                     lambda           = numeric(0),
                     alpha            = 1,
-                    gamma            = 3.7,
+                    gamma            = ifelse(penalty == "scad", 3.7, 1.4),
                     penalty.factor   = NULL,
                     upper.limits     = rep(Inf, NCOL(x)),
                     lower.limits     = rep(-Inf, NCOL(x)),

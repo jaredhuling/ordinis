@@ -6,12 +6,13 @@
 \usage{
 ordinis(x, y, weights = rep(1, NROW(y)), offset = NULL,
   family = c("gaussian", "binomial"), penalty = c("lasso", "mcp", "scad"),
-  lambda = numeric(0), alpha = 1, gamma = 3.7, penalty.factor = NULL,
-  upper.limits = rep(Inf, NCOL(x)), lower.limits = rep(-Inf, NCOL(x)),
-  nlambda = 100L, lambda.min.ratio = NULL, intercept = TRUE,
-  standardize = TRUE, dfmax = nvars, maxit = ifelse(family == "gaussian",
-  5000L, 500L), tol = ifelse(family == "gaussian", 1e-04, 0.001),
-  maxit.irls = 100L, tol.irls = 0.001)
+  lambda = numeric(0), alpha = 1, gamma = ifelse(penalty == "scad", 3.7,
+  1.4), penalty.factor = NULL, upper.limits = rep(Inf, NCOL(x)),
+  lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
+  lambda.min.ratio = NULL, intercept = TRUE, standardize = TRUE,
+  dfmax = nvars, maxit = ifelse(family == "gaussian", 5000L, 500L),
+  tol = ifelse(family == "gaussian", 1e-04, 0.001), maxit.irls = 100L,
+  tol.irls = 0.001)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -40,7 +41,7 @@ It is recommended to set this parameter to be \code{NULL}
 
 \item{alpha}{mixing parameter between 0 and 1 for elastic net. \code{alpha=1} is for the lasso, \code{alpha=0} is for ridge}
 
-\item{gamma}{parameter for MCP/SCAD}
+\item{gamma}{parameter for MCP/SCAD. Defaults to the recommended values from the papers corresponding to each penalty}
 
 \item{penalty.factor}{a vector with length equal to the number of columns in x to be multiplied by lambda. by default
 it is a vector of 1s. \code{penalty.factor} is NOT scaled}
@@ -61,8 +62,8 @@ the explanation of the \code{lambda}
 argument. This parameter is only used when
 the program calculates its own \eqn{\lambda}
 (by setting \code{lambda = NULL}). The default
-value is the same as \pkg{glmnet}: 0.0001 if
-\code{nrow(x) >= ncol(x)} and 0.01 otherwise.}
+value is the same as \pkg{glmnet}: 0.001 if
+\code{nrow(x) >= ncol(x)} and 0.05 otherwise.}
 
 \item{intercept}{Whether to fit an intercept in the model. Default is \code{TRUE}.}
 
