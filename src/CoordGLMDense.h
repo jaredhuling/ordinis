@@ -1,5 +1,5 @@
-#ifndef COORDLOGISTICDENSE_H
-#define COORDLOGISTICDENSE_H
+#ifndef COORDGLMDENSE_H
+#define COORDGLmDENSE_H
 
 #include "CoordBase.h"
 #include "utils.h"
@@ -16,7 +16,7 @@
 // b => y
 // f(x) => 1/2 * ||Ax - b||^2
 // g(z) => lambda * ||z||_1
-class CoordLogisticDense: public CoordBase<Eigen::SparseVector<double> > //Eigen::SparseVector<double>
+class CoordGLMDense: public CoordBase<Eigen::SparseVector<double> > //Eigen::SparseVector<double>
 {
 protected:
     typedef float Scalar;
@@ -42,10 +42,13 @@ protected:
     Scalar lambda, lambda_ridge, gamma;  // L1 penalty
 
     double threshval;
-    VectorXd resid_cur, xbeta_cur, p, W, weightssqrt, z;
+    VectorXd resid_cur, xbeta_cur, mu, varmu, mu_eta_nv, W, weightssqrt, z;
 
     std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
+
+    Rcpp::Function var, mu_eta, linkinv, dev_resids;
+
     bool intercept;
     MapMat limits;
     double alpha;
@@ -116,16 +119,67 @@ protected:
         xbeta_cur.array() = offset.array() + beta0;
 
         // calculate null deviance
-        null_dev = (-1.0 * datY.array() * log(ymean) - (1.0 - datY.array()) * std::log(1.0 - ymean)).sum();
+        //null_dev = (-1.0 * datY.array() * log(ymean) - (1.0 - datY.array()) * std::log(1.0 - ymean)).sum();
+
+        //wtdmu <- if (intercept)
+        //    sum(weights * y)/sum(weights)
+        //    else linkinv(offset)
+        //        nulldev <- sum(dev.resids(y, wtdmu, weights))
+
+
+        if (intercept)
+        {
+            double wtdmu;
+            wtdmu = (weights.array() * datY.array() / weights.sum()).sum();
+            Rcpp::NumericVector nulldev_all = dev_resids(datY, wtdmu, weights);
+            null_dev = sum(nulldev_all);
+        } else
+        {
+            Rcpp::NumericVector wtdmu = linkinv(offset);
+            Rcpp::NumericVector nulldev_all = dev_resids(datY, wtdmu, weights);
+            null_dev = sum(nulldev_all);
+        }
+    }
+
+    virtual void update_mu_eta()
+    {
+        Rcpp::NumericVector mu_eta_ = mu_eta(xbeta_cur);
+
+        std::copy(mu_eta_.begin(), mu_eta_.end(), mu_eta_nv.data());
+    }
+
+    virtual void update_var_mu()
+    {
+        Rcpp::NumericVector var_mu_nv = var(mu);
+
+        std::copy(var_mu_nv.begin(), var_mu_nv.end(), varmu.data());
+    }
+
+    virtual void update_mu()
+    {
+        // mu <- linkinv(eta <- eta + offset)
+        Rcpp::NumericVector mu_nv = linkinv(xbeta_cur);
+
+        std::copy(mu_nv.begin(), mu_nv.end(), mu.data());
     }
 
     void update_quadratic_approx()
     {
         // calculate mean function
-        p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
+        //p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
+
+        //mu = linkinv(xbeta_cur);
+        update_mu();
+
+        //varmu = var(mu);
+        update_var_mu();
+
+        //mu_eta_nv = mu_eta(xbeta_cur);
+        update_mu_eta();
 
         // construct weights and multiply by user-specified weights
-        W = weights.array() * p.array() * (1.0 - p.array());
+        //W = weights.array() * p.array() * (1.0 - p.array());
+        W = (weights.array() * mu_eta_nv.array().square() / varmu.array()).array().sqrt();
 
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
@@ -136,9 +190,27 @@ protected:
             }
         }
 
+        /*
+        update_var_mu();
+
+        update_mu_eta();
+
+        update_z();
+
+        update_w();
+
+        solve_wls();
+
+        update_eta();
+
+        update_mu();
+
+        update_dev_resids();
+         */
+
         // here we update the residuals and multiply by user-specified weights, which
         // will be multiplied by X. ie X'resid_cur = X'Wz, where z is the working response from IRLS
-        resid_cur = weights.array() * (datY.array() - p.array()); // + xbeta_cur.array() * W.array().sqrt();
+        resid_cur = weights.array() * (datY.array() - mu.array()); // + xbeta_cur.array() * W.array().sqrt();
 
         //Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
@@ -151,33 +223,8 @@ protected:
         weights_sum = W.sum();
 
         // update deviance
-        deviance = 0.0;
-        for (int ii = 0; ii < nobs; ++ii)
-        {
-            if (datY(ii) == 1)
-            {
-                if (p(ii) > 1e-5)
-                {
-                    deviance -= std::log(p(ii));
-                } else
-                {
-                    // don't divide by zero
-                    deviance -= std::log(1e-5);
-                }
-
-            } else
-            {
-                if (p(ii) <= 1.0 - 1e-5)
-                {
-                    deviance -= std::log((1.0 - p(ii)));
-                } else
-                {
-                    // don't divide by zero
-                    deviance -= std::log(1.0 - 1e-5);
-                }
-
-            }
-        }
+        Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+        deviance = sum(dev_resids_all);
     }
 
     void update_intercept()
@@ -295,13 +342,13 @@ protected:
     {
         if (penalty == "lasso")
         {
-            thresh_func = &CoordLogisticDense::soft_threshold;
+            thresh_func = &CoordGLMDense::soft_threshold;
         } else if (penalty == "mcp")
         {
-            thresh_func = &CoordLogisticDense::mcp_threshold;
+            thresh_func = &CoordGLMDense::mcp_threshold;
         } else
         {
-            thresh_func = &CoordLogisticDense::scad_threshold;
+            thresh_func = &CoordGLMDense::scad_threshold;
         }
     }
 
@@ -571,18 +618,22 @@ protected:
 
 
 public:
-    CoordLogisticDense(ConstGenericMatrix &datX_,
-                       ConstGenericVector &datY_,
-                       ConstGenericVector &weights_,
-                       ConstGenericVector &offset_,
-                       ArrayXd &penalty_factor_,
-                       ConstGenericMatrix &limits_,
-                       std::string &penalty_,
-                       bool intercept_,
-                       double alpha_      = 1.0,
-                       double tol_        = 1e-6,
-                       int    maxit_irls_ = 100,
-                       double tol_irls_   = 1e-6) :
+    CoordGLMDense(ConstGenericMatrix &datX_,
+                  ConstGenericVector &datY_,
+                  ConstGenericVector &weights_,
+                  ConstGenericVector &offset_,
+                  ArrayXd &penalty_factor_,
+                  ConstGenericMatrix &limits_,
+                  std::string &penalty_,
+                  Rcpp::Function var_,
+                  Rcpp::Function mu_eta_,
+                  Rcpp::Function linkinv_,
+                  Rcpp::Function dev_resids_,
+                  bool intercept_,
+                  double alpha_      = 1.0,
+                  double tol_        = 1e-6,
+                  int    maxit_irls_ = 100,
+                  double tol_irls_   = 1e-6) :
     CoordBase<Eigen::SparseVector<double> >
                 (datX_.rows(), datX_.cols(), tol_),
                                datX(datX_.data(), datX_.rows(), datX_.cols()),
@@ -591,11 +642,14 @@ public:
                                offset(offset_.data(), offset_.size()),
                                resid_cur(datX_.rows()),
                                xbeta_cur(datX_.rows()),
-                               p(datX_.rows()),
+                               mu(datX_.rows()),
+                               varmu(datX_.rows()),
+                               mu_eta_nv(datX_.rows()),
                                W(datX_.rows()), weightssqrt(weights.array().sqrt()),
                                z(datX_.rows()),
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
+                               var(var_), mu_eta(mu_eta_), linkinv(linkinv_), dev_resids(dev_resids_),
                                intercept(intercept_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_), maxit_irls(maxit_irls_), tol_irls(tol_irls_),
@@ -690,6 +744,7 @@ public:
         deviance = 0.0;
 
         double cutoff = (2.0 * lambda - lprev);
+
 
         /*
         if (penalty_factor_size < 1)

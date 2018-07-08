@@ -1,6 +1,7 @@
 #define EIGEN_DONT_PARALLELIZE
 
 #include "CoordLogisticDense.h"
+#include "CoordGLMDense.h"
 #include "DataStd.h"
 
 
@@ -45,6 +46,7 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
                              double lmin_ratio_,
                              bool   standardize_,
                              bool   intercept_,
+                             bool   glm_fam_,
                              List   opts_)
 {
 
@@ -87,24 +89,55 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     const int dfmax        = as<int>(opts["dfmax"]);
     const bool standardize = standardize_;
     const bool intercept   = intercept_;
+    const bool glm_fam     = glm_fam_;
 
     std::vector<std::string> penalty(as< std::vector<std::string> >(opts["penalty"]));
 
     DataStd<double> datstd(n, p, standardize, intercept, true);
     datstd.standardize(datX, datY, limits);
 
-    CoordLogisticDense *solver;
-    solver = new CoordLogisticDense(datX, datY,
-                                    weights, offset,
-                                    penalty_factor,
-                                    limits, penalty[0],
-                                    intercept, alpha,
-                                    tol, maxit_irls, tol_irls);
+
+    CoordGLMDense *solver;
+    CoordLogisticDense *solver_bin;
+
+    //CoordBase<Eigen::SparseVector<double> > *solver = NULL; // obj doesn't point to anything yet
+
+    if (glm_fam)
+    {
+        Rcpp::Function var        = as<Rcpp::Function>(opts["variance"]);
+        Rcpp::Function mu_eta     = as<Rcpp::Function>(opts["mu_eta"]);
+        Rcpp::Function linkinv    = as<Rcpp::Function>(opts["linkinv"]);
+        Rcpp::Function dev_resids = as<Rcpp::Function>(opts["dev_resids"]);
+
+        solver = new CoordGLMDense(datX, datY,
+                                   weights, offset,
+                                   penalty_factor,
+                                   limits, penalty[0],
+                                   var, mu_eta, linkinv, dev_resids,
+                                   intercept, alpha,
+                                   tol, maxit_irls, tol_irls);
+    } else
+    {
+        solver_bin = new CoordLogisticDense(datX, datY,
+                                            weights, offset,
+                                            penalty_factor,
+                                            limits, penalty[0],
+                                            intercept, alpha,
+                                            tol, maxit_irls, tol_irls);
+    }
+
+
 
     if (nlambda < 1)
     {
         double lmax = 0.0;
-        lmax = solver->get_lambda_zero() / double(n);
+        if (glm_fam)
+        {
+            lmax = solver->get_lambda_zero();
+        } else
+        {
+            lmax = solver_bin->get_lambda_zero();
+        }
 
         double lmin = lmin_ratio_ * lmax;
         lambda.setLinSpaced(nlambda_, std::log(lmax), std::log(lmin));
@@ -128,42 +161,102 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
     VectorXd deviance(nlambda);
     deviance.setZero();
 
+
     int last = nlambda;
     for(int i = 0; i < nlambda; i++)
     {
 
         ilambda = lambda[i];
 
-        if(i == 0)
-            solver->init(ilambda, gamma);
-        else
-            solver->init_warm(ilambda, gamma);
-
-        niter[i] = solver->solve(maxit);
-
-        SpVec res = solver->get_beta();
-        int nzero = solver->get_nzero();
-        deviance(i) = solver->get_dev();
-
-        if (i == 0) null_dev = solver->get_null_dev();
-
-        if ((nzero > dfmax || deviance(i) < 0.01 * null_dev) && i > 0 )
+        if (glm_fam)
         {
-            last = i - 1;
-            break;
-        }
+            if(i == 0)
+                solver->init(ilambda, gamma);
+            else
+                solver->init_warm(ilambda, gamma);
 
-        double beta0 = 0.0;
-        beta0 = solver->get_intercept();
-        datstd.recover(beta0, res);
-        //beta(0,i) = beta0;
-        //beta.block(1, i, p, 1) = res;
-        write_beta_matrix(beta, i, beta0, res);
+            niter[i]    = solver->solve(maxit);
+
+            SpVec res   = solver->get_beta();
+            int nzero   = solver->get_nzero();
+            deviance(i) = solver->get_dev();
+
+            if (i == 0) null_dev = solver->get_null_dev();
+
+            if (p >= n)
+            {
+                if ((nzero > dfmax || deviance(i) < 0.1 * null_dev) && i > 0 )
+                {
+                    last = i - 1;
+                    break;
+                }
+            } else
+            {
+                if ((nzero > dfmax || deviance(i) < 0.05 * null_dev) && i > 0 )
+                {
+                    last = i - 1;
+                    break;
+                }
+            }
+
+            double beta0 = 0.0;
+            beta0 = solver->get_intercept();
+
+            datstd.recover(beta0, res);
+            //beta(0,i) = beta0;
+            //beta.block(1, i, p, 1) = res;
+            write_beta_matrix(beta, i, beta0, res);
+        } else
+        {
+            if(i == 0)
+                solver_bin->init(ilambda, gamma);
+            else
+                solver_bin->init_warm(ilambda, gamma);
+
+            niter[i]    = solver_bin->solve(maxit);
+
+            SpVec res   = solver_bin->get_beta();
+            int nzero   = solver_bin->get_nzero();
+            deviance(i) = solver_bin->get_dev();
+
+            if (i == 0) null_dev = solver_bin->get_null_dev();
+
+            if (p >= n)
+            {
+                if ((nzero > dfmax || deviance(i) < 0.1 * null_dev) && i > 0 )
+                {
+                    last = i - 1;
+                    break;
+                }
+            } else
+            {
+                if ((nzero > dfmax || deviance(i) < 0.05 * null_dev) && i > 0 )
+                {
+                    last = i - 1;
+                    break;
+                }
+            }
+
+            double beta0 = 0.0;
+            beta0 = solver_bin->get_intercept();
+
+            datstd.recover(beta0, res);
+            //beta(0,i) = beta0;
+            //beta.block(1, i, p, 1) = res;
+            write_beta_matrix(beta, i, beta0, res);
+        }
 
         //lossvec(i) = solver->get_loss();
     }
 
-    delete solver;
+    if (glm_fam)
+    {
+        delete solver;
+    } else
+    {
+        delete solver_bin;
+    }
+
 
     beta.makeCompressed();
 
@@ -188,6 +281,7 @@ List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x,
                                  double lmin_ratio,
                                  bool standardize,
                                  bool intercept,
+                                 bool glm_fam,
                                  List opts)
 {
     return coord_ordinis_dense_glm(x, y, weights, offset,
@@ -197,5 +291,6 @@ List coord_ordinis_dense_glm_cpp(Rcpp::NumericMatrix x,
                                    lmin_ratio,
                                    standardize,
                                    intercept,
+                                   glm_fam,
                                    opts);
 }

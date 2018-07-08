@@ -72,7 +72,7 @@ ordinis <- function(x,
                     y,
                     weights          = rep(1, NROW(y)),
                     offset           = NULL,
-                    family           = c("gaussian", "binomial"),
+                    family           = NULL,
                     penalty          = c("lasso", "mcp", "scad"),
                     lambda           = numeric(0),
                     alpha            = 1,
@@ -85,8 +85,8 @@ ordinis <- function(x,
                     intercept        = TRUE,
                     standardize      = TRUE,
                     dfmax            = nvars,
-                    maxit            = ifelse(family == "gaussian", 5000L, 500L),
-                    tol              = ifelse(family == "gaussian", 1e-4, 1e-3),
+                    maxit            = NULL,
+                    tol              = NULL,
                     maxit.irls       = 100L,
                     tol.irls         = 1e-3
 )
@@ -100,8 +100,74 @@ ordinis <- function(x,
 
     intercept    <- as.logical(intercept)
     standardize  <- as.logical(standardize)
-    family       <- match.arg(family)
     penalty      <- match.arg(penalty)
+
+    if (is.null(family) || is.character(family) & (family == "gaussian" | family == "binomial"))
+    {
+        glm_fam <- FALSE
+        if (is.null(family)) family <- "gaussian"
+
+        if (is.null(maxit))
+        {
+            if (family == "gaussian")
+            {
+                maxit <- 5000L
+            } else
+            {
+                maxit <- 500L
+            }
+        }
+
+        if (is.null(tol))
+        {
+            if (family == "gaussian")
+            {
+                tol <- 1e-4
+            } else
+            {
+                tol <- 1e-3
+            }
+        }
+
+    } else
+    {
+        glm_fam <- TRUE
+        if (is.character(family))
+        {
+            family <- get(family, mode = "function", envir = parent.frame())
+        }
+        if (is.function(family))
+        {
+            family <- family()
+        }
+        if (is.null(family$family))
+        {
+            print(family)
+            stop("'family' not recognized")
+        }
+
+        if (is.null(maxit))
+        {
+            if (family$family == "gaussian")
+            {
+                maxit <- 5000L
+            } else
+            {
+                maxit <- 500L
+            }
+        }
+
+        if (is.null(tol))
+        {
+            if (family$family == "gaussian")
+            {
+                tol <- 1e-4
+            } else
+            {
+                tol <- 1e-3
+            }
+        }
+    }
 
     if (!is.null(dim(x)))
     {
@@ -121,11 +187,14 @@ ordinis <- function(x,
         offset <- rep(0, n)
     }
 
-    if (family == "binomial")
+    if (!glm_fam)
     {
-        if (length(unique(y)) != 2) stop("y must only take 2 values")
+        if (family == "binomial")
+        {
+            if (length(unique(y)) != 2) stop("y must only take 2 values")
 
-        if (penalty != "lasso") warning("non-lasso penalties for non-gaussian responses are experimental")
+            #if (penalty != "lasso") warning("non-lasso penalties for non-gaussian responses are experimental")
+        }
     }
 
     ## taken from glmnet
@@ -201,7 +270,6 @@ ordinis <- function(x,
 
     if (alpha > 1 | alpha < 0) stop("alpha must be between 0 and 1")
 
-
     if(maxit <= 0)
     {
         stop("maxit should be positive")
@@ -220,18 +288,61 @@ ordinis <- function(x,
     penalty     <- as.character(penalty[1])
     dfmax       <- as.integer(dfmax[1])
 
-    opts <- list(maxit       = maxit,
-                 tol         = tol,
-                 alpha       = alpha,
-                 gamma       = gamma,
-                 penalty     = penalty,
-                 maxit.irls  = maxit.irls,
-                 tol.irls    = tol.irls,
-                 dfmax       = dfmax)
+    if (glm_fam)
+    {
+        opts <- list(maxit       = maxit,
+                     tol         = tol,
+                     alpha       = alpha,
+                     gamma       = gamma,
+                     penalty     = penalty,
+                     maxit.irls  = maxit.irls,
+                     tol.irls    = tol.irls,
+                     dfmax       = dfmax,
+                     variance    = family$variance,
+                     mu_eta      = family$mu.eta,
+                     linkinv     = family$linkinv,
+                     dev_resids  = family$dev.resids)
+    } else
+    {
+        opts <- list(maxit       = maxit,
+                     tol         = tol,
+                     alpha       = alpha,
+                     gamma       = gamma,
+                     penalty     = penalty,
+                     maxit.irls  = maxit.irls,
+                     tol.irls    = tol.irls,
+                     dfmax       = dfmax,
+                     variance    = numeric(0),
+                     mu_eta      = numeric(0),
+                     linkinv     = numeric(0),
+                     dev_resids  = numeric(0))
+    }
 
     if (gamma <= 1) stop("gamma must be greater than 1")
 
-    if (family == "gaussian")
+    if (glm_fam || family == "binomial")
+    {
+
+        res <- coord_ordinis_dense_glm_cpp(x,
+                                           y,
+                                           weights,
+                                           drop(offset),
+                                           lambda,
+                                           penalty.factor,
+                                           rbind(upper.limits, lower.limits),
+                                           nlambda,
+                                           lambda.min.ratio,
+                                           standardize,
+                                           intercept,
+                                           glm_fam,
+                                           opts
+        )
+        res$beta   <- res$beta[, 1:res$last, drop = FALSE]
+
+        res$beta   <- as(res$beta, "sparseMatrix")
+
+        res$deviance   <- res$deviance[1:res$last]
+    } else if (family == "gaussian")
     {
         res <- coord_ordinis_dense_cpp(x,
                                        y - drop(offset),
@@ -253,27 +364,6 @@ ordinis <- function(x,
         res$resid  <- matrix(rep(y, ncol(res$beta)), ncol = ncol(res$beta) ) - res$fitted
         res$loss   <- colSums(res$resid ^ 2)
 
-    } else if (family == "binomial")
-    {
-
-        res <- coord_ordinis_dense_glm_cpp(x,
-                                           y,
-                                           weights,
-                                           drop(offset),
-                                           lambda,
-                                           penalty.factor,
-                                           rbind(upper.limits, lower.limits),
-                                           nlambda,
-                                           lambda.min.ratio,
-                                           standardize,
-                                           intercept,
-                                           opts
-        )
-        res$beta   <- res$beta[, 1:res$last, drop = FALSE]
-
-        res$beta   <- as(res$beta, "sparseMatrix")
-
-        res$deviance   <- res$deviance[1:res$last]
     }
 
     rownames(res$beta) <- c("(Intercept)", vnames)
@@ -285,7 +375,7 @@ ordinis <- function(x,
 
     res$nzero   <- colSums(res$beta[-1,,drop=FALSE] != 0)
 
-
+    res$glm_fam     <- glm_fam
     res$family      <- family
     res$penalty     <- penalty
     res$standardize <- standardize
@@ -293,9 +383,16 @@ ordinis <- function(x,
     res$nobs        <- n
     res$nvars       <- p
 
-    class2 <- switch(family,
-                     "gaussian" = "cdgaussian",
-                     "binomial" = "cdbinomial")
+    if (!glm_fam)
+    {
+        class2 <- switch(family,
+                         "gaussian" = "cdgaussian",
+                         "binomial" = "cdbinomial")
+    } else
+    {
+        class2 <- "glm_ordinis"
+    }
+
 
     class(res) <- c("ordinis", class2)
     res
