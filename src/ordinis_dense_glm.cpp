@@ -107,15 +107,17 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         Rcpp::Function var        = as<Rcpp::Function>(opts["variance"]);
         Rcpp::Function mu_eta     = as<Rcpp::Function>(opts["mu_eta"]);
         Rcpp::Function linkinv    = as<Rcpp::Function>(opts["linkinv"]);
+        Rcpp::Function linkfun    = as<Rcpp::Function>(opts["linkfun"]);
         Rcpp::Function dev_resids = as<Rcpp::Function>(opts["dev_resids"]);
 
         solver = new CoordGLMDense(datX, datY,
                                    weights, offset,
                                    penalty_factor,
                                    limits, penalty[0],
-                                   var, mu_eta, linkinv, dev_resids,
+                                   var, mu_eta, linkinv, linkfun, dev_resids,
                                    intercept, alpha,
                                    tol, maxit_irls, tol_irls);
+
     } else
     {
         solver_bin = new CoordLogisticDense(datX, datY,
@@ -245,7 +247,6 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
             //beta.block(1, i, p, 1) = res;
             write_beta_matrix(beta, i, beta0, res);
         }
-
         //lossvec(i) = solver->get_loss();
     }
 

@@ -50,8 +50,9 @@ protected:
     double alpha;
     int penalty_factor_size;
 
-    VectorXd XY;                    // X'Y
+    VectorXd XY;                  // X'Y
     VectorXd Xsq;                 // colSums(X^2)
+    VectorXd Xtr;                 // X'resid
 
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
@@ -239,7 +240,10 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                grad = Xtr(j) + beta_prev * Xsq(j);
+                //grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
@@ -278,7 +282,10 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                grad = Xtr(j) + beta_prev * Xsq(j);
+                //grad      = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -334,7 +341,10 @@ protected:
                     // and not pre-calculate it within each newton iteration..
                     if (Xsq(j)  < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j) ;
+                    Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                    grad = Xtr(j) + beta_prev * Xsq(j);
+                    //grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j) ;
 
                     threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
@@ -375,7 +385,10 @@ protected:
                     // and not pre-calculate it within each newton iteration..
                     if (Xsq(j) < 0.0) Xsq(j) = (datX.col(j).array().square()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                    Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                    grad = Xtr(j) + beta_prev * Xsq(j);
+                    //grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -473,7 +486,7 @@ public:
                                alpha(alpha_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY((datX.transpose() * (datY.array() * weights.array()).matrix()) ),
-                               Xsq(datX_.cols())
+                               Xsq(datX_.cols()), Xtr(datX_.cols())
     {}
 
     double get_lambda_zero()
@@ -528,10 +541,21 @@ public:
 
         weights_sum = weights.sum();
 
-        double cutoff = 2.0 * lambda - lambda0;
+        double cutoff;
+
+        if (penalty == "lasso")
+        {
+            cutoff = 2.0 * lambda - lambda0;
+        } else if (penalty == "mcp")
+        {
+            cutoff = lambda + gamma / (gamma - 1.0) * (lambda - lambda0);
+        } else
+        {
+            cutoff = lambda + gamma / (gamma - 2.0) * (lambda - lambda0);
+        }
 
 
-        /*
+
         if (penalty_factor_size < 1)
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff)) eligible_set.coeffRef(j) = 1;
@@ -539,7 +563,6 @@ public:
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff * penalty_factor(j))) eligible_set.coeffRef(j) = 1;
         }
-         */
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
 
@@ -559,17 +582,28 @@ public:
 
         nzero = 0;
 
-        double cutoff = (2.0 * lambda - lprev);
+        double cutoff;
 
-        /*
-        if (penalty_factor_size < 1)
+        if (penalty == "lasso")
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) >  std::pow(nobs, 0.85) * (cutoff)) eligible_set(j) = 1;
+            cutoff = 2.0 * lambda - lprev;
+        } else if (penalty == "mcp")
+        {
+            cutoff = lambda + gamma / (gamma - 1.0) * (lambda - lprev);
         } else
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (std::pow(nobs, 0.85) * cutoff * penalty_factor(j))) eligible_set(j) = 1;
+            cutoff = lambda + gamma / (gamma - 2.0) * (lambda - lprev);
         }
-         */
+
+
+
+        if (penalty_factor_size < 1)
+        {
+            for (int j = 0; j < nvars; ++j) if (std::abs(Xtr(j)) >  std::pow(nobs, 0.85) * (cutoff)) eligible_set.coeffRef(j) = 1;
+        } else
+        {
+            for (int j = 0; j < nvars; ++j) if (std::abs(Xtr(j)) > (std::pow(nobs, 0.85) * cutoff * penalty_factor(j))) eligible_set.coeffRef(j) = 1;
+        }
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
     }
@@ -582,11 +616,11 @@ public:
         int current_iter = 0;
 
         // run once through all variables
-        current_iter++;
-        beta_prev = beta;
-        ineligible_set.fill(1);
+        //current_iter++;
+        //beta_prev = beta;
+        //ineligible_set.fill(1);
 
-        update_beta(ineligible_set);
+        //update_beta(ineligible_set);
 
         while(current_iter < maxit)
         {

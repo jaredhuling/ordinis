@@ -132,6 +132,7 @@ ordinis <- function(x,
     } else
     {
         glm_fam <- TRUE
+        message("Use of glm family() functions still experimental. Does not always work yet")
         if (is.character(family))
         {
             family <- get(family, mode = "function", envir = parent.frame())
@@ -301,6 +302,7 @@ ordinis <- function(x,
                      variance    = family$variance,
                      mu_eta      = family$mu.eta,
                      linkinv     = family$linkinv,
+                     linkfun     = family$linkfun,
                      dev_resids  = family$dev.resids)
     } else
     {
@@ -315,6 +317,7 @@ ordinis <- function(x,
                      variance    = numeric(0),
                      mu_eta      = numeric(0),
                      linkinv     = numeric(0),
+                     linkfun     = numeric(0),
                      dev_resids  = numeric(0))
     }
 

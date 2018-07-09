@@ -1,5 +1,5 @@
 #ifndef COORDGLMDENSE_H
-#define COORDGLmDENSE_H
+#define COORDGLMDENSE_H
 
 #include "CoordBase.h"
 #include "utils.h"
@@ -47,7 +47,7 @@ protected:
     std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
 
-    Rcpp::Function var, mu_eta, linkinv, dev_resids;
+    Rcpp::Function var, mu_eta, linkinv, linkfun, dev_resids;
 
     bool intercept;
     MapMat limits;
@@ -56,8 +56,9 @@ protected:
     double tol_irls;
     int penalty_factor_size;
 
-    VectorXd XY;                    // X'Y
+    VectorXd XY;                  // X'Y
     VectorXd Xsq;                 // colSums(X^2)
+    VectorXd Xtr;                 // X'resid
 
     Scalar lambda0;               // minimum lambda to make coefficients all zero
 
@@ -110,7 +111,21 @@ protected:
 
         if (intercept)
         {
-            beta0 = std::log(ymean / (1.0 - ymean));
+
+            /*
+            if (datY.maxCoeff() == 1 && datY.minCoeff() == 0)
+            {
+                beta0 = std::log(ymean / (1.0 - ymean));
+            } else
+            {
+                beta0 = ymean;
+            }
+             */
+
+            Rcpp::NumericVector interceptstart = linkfun(ymean);
+
+            beta0 = interceptstart[0];
+
         } else
         {
             beta0 = 0.0;
@@ -140,6 +155,9 @@ protected:
             null_dev = sum(nulldev_all);
         }
     }
+
+
+
 
     virtual void update_mu_eta()
     {
@@ -177,9 +195,15 @@ protected:
         //mu_eta_nv = mu_eta(xbeta_cur);
         update_mu_eta();
 
+        //std::cout << "varmu max: " << varmu.maxCoeff() << " varmu min: " << varmu.minCoeff() << std::endl;
+
+        //std::cout << "mu_eta_nv max: " << mu_eta_nv.maxCoeff() << " mu_eta_nv min: " << mu_eta_nv.minCoeff() << std::endl;
+
         // construct weights and multiply by user-specified weights
         //W = weights.array() * p.array() * (1.0 - p.array());
         W = (weights.array() * mu_eta_nv.array().square() / varmu.array()).array().sqrt();
+
+        //std::cout << "wts max: " << W.maxCoeff() << " wts min: " << W.minCoeff() << std::endl;
 
         // make sure no weights are too small
         for (int k = 0; k < nobs; ++k)
@@ -211,6 +235,8 @@ protected:
         // here we update the residuals and multiply by user-specified weights, which
         // will be multiplied by X. ie X'resid_cur = X'Wz, where z is the working response from IRLS
         resid_cur = weights.array() * (datY.array() - mu.array()); // + xbeta_cur.array() * W.array().sqrt();
+
+        //std::cout << "resid max: " <<resid_cur.maxCoeff() << "resid min: " << resid_cur.minCoeff() << std::endl;
 
         //Xsq = (W.array().sqrt().matrix().asDiagonal() * datX).array().square().colwise().sum();
 
@@ -374,7 +400,9 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                grad = Xtr(j) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
@@ -421,7 +449,11 @@ protected:
                 // and not pre-calculate it within each newton iteration..
                 if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                grad = Xtr(j) + beta_prev * Xsq(j);
+
+                //grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                 threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -485,7 +517,11 @@ protected:
                     // and not pre-calculate it within each newton iteration..
                     if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                    Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                    grad = Xtr(j) + beta_prev * Xsq(j);
+
+                    //grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, lambda, gamma, lambda_ridge, Xsq(j));
 
@@ -534,7 +570,10 @@ protected:
                     // and not pre-calculate it within each newton iteration..
                     if (Xsq(j) < 0) Xsq(j) = (datX.col(j).array().square() * W.array()).matrix().mean();
 
-                    grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
+                    Xtr(j) = datX.col(j).dot(resid_cur) / double(nobs);
+
+                    grad = Xtr(j) + beta_prev * Xsq(j);
+                    //grad = datX.col(j).dot(resid_cur) / double(nobs) + beta_prev * Xsq(j);
 
                     threshval = thresh_func(grad, penalty_factor(j) * lambda, gamma, penalty_factor(j) * lambda_ridge, Xsq(j));
 
@@ -628,6 +667,7 @@ public:
                   Rcpp::Function var_,
                   Rcpp::Function mu_eta_,
                   Rcpp::Function linkinv_,
+                  Rcpp::Function linkfun_,
                   Rcpp::Function dev_resids_,
                   bool intercept_,
                   double alpha_      = 1.0,
@@ -649,13 +689,13 @@ public:
                                z(datX_.rows()),
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
-                               var(var_), mu_eta(mu_eta_), linkinv(linkinv_), dev_resids(dev_resids_),
+                               var(var_), mu_eta(mu_eta_), linkinv(linkinv_), linkfun(linkfun_), dev_resids(dev_resids_),
                                intercept(intercept_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_), maxit_irls(maxit_irls_), tol_irls(tol_irls_),
                                penalty_factor_size(penalty_factor_.size()),
                                XY(datX.transpose() * (datY.array() * weights.array()).matrix()),
-                               Xsq(datX_.cols())
+                               Xsq(datX_.cols()), Xtr(datX_.cols())
     {}
 
     double get_lambda_zero()
@@ -710,17 +750,27 @@ public:
         // this starts estimate of intercept
         initialize_params();
 
-        double cutoff = 2.0 * lambda - lambda0;
+        double cutoff;
+
+        if (penalty == "lasso")
+        {
+            cutoff = 2.0 * lambda - lambda0;
+        } else if (penalty == "mcp")
+        {
+            cutoff = lambda + gamma / (gamma - 1.0) * (lambda - lambda0);
+        } else
+        {
+            cutoff = lambda + gamma / (gamma - 2.0) * (lambda - lambda0);
+        }
 
 
-        /*
         if (penalty_factor_size < 1)
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff)) eligible_set.coeffRef(j) = 1;
         } else
         {
             for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > (cutoff * penalty_factor(j))) eligible_set.coeffRef(j) = 1;
-        }*/
+        }
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
 
@@ -743,17 +793,27 @@ public:
 
         deviance = 0.0;
 
-        double cutoff = (2.0 * lambda - lprev);
+        double cutoff;
 
-
-        /*
-        if (penalty_factor_size < 1)
+        if (penalty == "lasso")
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) >  (cutoff)) eligible_set.coeffRef(j) = 1;
+            cutoff = 2.0 * lambda - lprev;
+        } else if (penalty == "mcp")
+        {
+            cutoff = lambda + gamma / (gamma - 1.0) * (lambda - lprev);
         } else
         {
-            for (int j = 0; j < nvars; ++j) if (std::abs(XY(j)) > cutoff * penalty_factor(j)) eligible_set.coeffRef(j) = 1;
-        }*/
+            cutoff = lambda + gamma / (gamma - 2.0) * (lambda - lprev);
+        }
+
+
+        if (penalty_factor_size < 1)
+        {
+            for (int j = 0; j < nvars; ++j) if (std::abs(Xtr(j)) >  (cutoff)) eligible_set.coeffRef(j) = 1;
+        } else
+        {
+            for (int j = 0; j < nvars; ++j) if (std::abs(Xtr(j)) > cutoff * penalty_factor(j)) eligible_set.coeffRef(j) = 1;
+        }
 
 
         //beta.reserve( std::max(eligible_set.sum() + 10, std::min(nvars, nobs)) );
@@ -770,7 +830,7 @@ public:
             irls_iter++;
 
             beta_prev_irls = beta;
-            deviance_prev = deviance;
+            deviance_prev  = deviance;
 
             //xbeta_cur.array() = (datX * beta).array() + beta0; //this is efficient because beta is a sparse vector
 
@@ -779,11 +839,11 @@ public:
             int current_iter = 0;
 
             // run once through all variables
-            current_iter++;
+            //current_iter++;
             beta_prev = beta;
             ineligible_set.fill(1);
 
-            update_beta(ineligible_set);
+            //update_beta(ineligible_set);
 
             while(current_iter < maxit)
             {
@@ -792,7 +852,7 @@ public:
                     current_iter++;
                     beta_prev = beta;
 
-                    update_quadratic_approx();
+                    if (current_iter % 5 == 0) update_quadratic_approx();
 
                     update_beta(eligible_set);
 
