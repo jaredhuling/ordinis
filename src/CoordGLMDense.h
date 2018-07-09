@@ -201,7 +201,7 @@ protected:
 
         // construct weights and multiply by user-specified weights
         //W = weights.array() * p.array() * (1.0 - p.array());
-        W = (weights.array() * mu_eta_nv.array().square() / varmu.array()).array().sqrt();
+        W = (weights.array() * mu_eta_nv.array().square() / varmu.array());
 
         //std::cout << "wts max: " << W.maxCoeff() << " wts min: " << W.minCoeff() << std::endl;
 
@@ -835,6 +835,13 @@ public:
             //xbeta_cur.array() = (datX * beta).array() + beta0; //this is efficient because beta is a sparse vector
 
             update_quadratic_approx();
+
+            /*
+            std::cout << "mu: " << mu.head(5).transpose() << std::endl;
+            std::cout << "var: " << varmu.head(5).transpose() << std::endl;
+            std::cout << "mu_eta: " << mu_eta_nv.head(5).transpose() << std::endl;
+            std::cout << "wts: " << W.head(5).transpose() << std::endl;
+             */
 
             int current_iter = 0;
 
