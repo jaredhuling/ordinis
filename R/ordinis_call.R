@@ -74,7 +74,7 @@ ordinis <- function(x,
                     weights          = rep(1, NROW(y)),
                     offset           = NULL,
                     family           = NULL,
-                    penalty          = c("lasso", "mcp", "scad"),
+                    penalty          = c("lasso", "alasso", "mcp", "scad"),
                     lambda           = numeric(0),
                     alpha            = 1,
                     gamma            = ifelse(penalty == "scad", 3.7, 1.4),
@@ -290,6 +290,14 @@ ordinis <- function(x,
     penalty     <- as.character(penalty[1])
     dfmax       <- as.integer(dfmax[1])
 
+
+    penalty_orig <- penalty
+
+    if (penalty == "alasso")
+    {
+        penalty <- "lasso"
+    }
+
     if (glm_fam)
     {
         opts <- list(maxit       = maxit,
@@ -370,6 +378,67 @@ ordinis <- function(x,
 
     }
 
+
+    if (penalty_orig == "alasso")
+    {
+        penwts <- as.vector(unname(1 / abs(res$beta[-1,ncol(res$beta)])))
+
+        if (length(penalty.factor))
+        {
+            penalty.factor <- penalty.factor * penwts
+        } else
+        {
+            penalty.factor <- penwts
+        }
+
+
+        if (glm_fam || family == "binomial")
+        {
+
+            res <- coord_ordinis_dense_glm_cpp(x,
+                                               y,
+                                               weights,
+                                               drop(offset),
+                                               lambda,
+                                               penalty.factor,
+                                               rbind(upper.limits, lower.limits),
+                                               nlambda,
+                                               lambda.min.ratio,
+                                               standardize,
+                                               intercept,
+                                               glm_fam,
+                                               opts
+            )
+            res$beta   <- res$beta[, 1:res$last, drop = FALSE]
+
+            res$beta   <- as(res$beta, "sparseMatrix")
+
+            res$deviance   <- res$deviance[1:res$last]
+        } else if (family == "gaussian")
+        {
+            res <- coord_ordinis_dense_cpp(x,
+                                           y - drop(offset),
+                                           weights,
+                                           lambda,
+                                           penalty.factor,
+                                           rbind(upper.limits, lower.limits),
+                                           nlambda,
+                                           lambda.min.ratio,
+                                           standardize,
+                                           intercept,
+                                           opts
+            )
+            res$beta   <- res$beta[, 1:res$last, drop = FALSE]
+
+            res$beta   <- as(res$beta, "sparseMatrix")
+
+            res$fitted <- as.matrix(cbind(1, x) %*% res$beta)
+            res$resid  <- matrix(rep(y, ncol(res$beta)), ncol = ncol(res$beta) ) - res$fitted
+            res$loss   <- colSums(res$resid ^ 2)
+
+        }
+    }
+
     rownames(res$beta) <- c("(Intercept)", vnames)
 
     res$niter  <- res$niter[1:res$last]
@@ -382,6 +451,7 @@ ordinis <- function(x,
     res$glm_fam     <- glm_fam
     res$family      <- family
     res$penalty     <- penalty
+    res$penalty.factor <- penalty.factor
     res$standardize <- standardize
     res$intercept   <- intercept
     res$nobs        <- n
