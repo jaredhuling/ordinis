@@ -56,7 +56,7 @@
 #' n = 100
 #' p = 1000
 #' b = c(runif(10, min = 0.1, max = 1), rep(0, p - 10))
-#' x = matrix(rnorm(n * p, sd = 3), n, p)
+#' x = matrix(rnorm(n * p, sd = 1.5), n, p)
 #' y = drop(x %*% b) + rnorm(n)
 #'
 #'
@@ -64,6 +64,7 @@
 #' res <- ordinis(x, y)
 #'
 #' y2 <- 1 * (y > 0)
+#' y3 <- exp(y)
 #'
 #' resb <- ordinis(x, y2, family = "binomial")
 #'
@@ -87,7 +88,7 @@ ordinis <- function(x,
                     dfmax            = nvars,
                     maxit            = NULL,
                     tol              = NULL,
-                    maxit.irls       = 100L,
+                    maxit.irls       = 25L,
                     tol.irls         = 1e-3
 )
 {

@@ -112,8 +112,8 @@ microbenchmark(
 
     ## Unit: seconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 3.558337 3.572053 3.590948 3.600987 3.606164 3.617202
-    ##  ordinis[lasso] 5.737124 5.929748 5.981113 5.967628 5.999605 6.271460
+    ##   glmnet[lasso] 3.377096 3.487334 3.543365 3.545748 3.553003 3.753645
+    ##  ordinis[lasso] 5.768823 5.777944 5.836068 5.799918 5.814987 6.018668
     ##  neval
     ##      5
     ##      5
@@ -137,8 +137,8 @@ microbenchmark(
 
     ## Unit: seconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 5.097843 5.159453 5.233510 5.263395 5.271643 5.375216
-    ##  ordinis[lasso] 5.351743 5.432486 5.526047 5.580820 5.629814 5.635374
+    ##   glmnet[lasso] 5.618403 5.748487 5.754279 5.783774 5.792731 5.827999
+    ##  ordinis[lasso] 5.961874 5.967261 6.039594 6.075738 6.088031 6.105065
     ##  neval
     ##      5
     ##      5
@@ -180,9 +180,9 @@ microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##            expr       min        lq     mean    median        uq      max
-    ##   glmnet[lasso]  346.7732  350.3684  356.549  354.6519  357.7764  373.175
-    ##  ordinis[lasso] 1094.7151 1096.0955 1105.472 1098.3948 1099.2188 1138.938
+    ##            expr       min        lq      mean   median        uq       max
+    ##   glmnet[lasso]  399.9576  405.9744  410.6385  407.893  410.4411  428.9268
+    ##  ordinis[lasso] 1166.7480 1185.0670 1193.5077 1192.116 1195.2467 1228.3609
     ##  neval
     ##      5
     ##      5
@@ -207,12 +207,12 @@ microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##            expr       min        lq      mean    median        uq
-    ##   glmnet[lasso]  612.8831  623.2813  631.1298  626.8109  645.9676
-    ##  ordinis[lasso] 1078.4774 1087.8824 1102.9708 1097.9502 1122.6082
-    ##        max neval
-    ##   646.7064     5
-    ##  1127.9360     5
+    ##            expr       min        lq      mean   median        uq       max
+    ##   glmnet[lasso]  676.8328  684.9007  697.8913  686.202  709.3506  732.1704
+    ##  ordinis[lasso] 1175.4595 1178.5731 1209.1550 1197.182 1215.1998 1279.3604
+    ##  neval
+    ##      5
+    ##      5
 
 ``` r
 # difference of results
@@ -248,8 +248,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 148.5056 151.6153 151.5632 152.3556 152.4774 152.8624
-    ##  ordinis[lasso] 281.0966 282.4747 289.1466 291.0906 294.7935 296.2775
+    ##   glmnet[lasso] 158.4697 158.7652 163.5977 159.7300 163.8546 177.1690
+    ##  ordinis[lasso] 312.3342 316.8890 317.9636 317.8517 320.2239 322.5189
     ##  neval
     ##      5
     ##      5
@@ -273,8 +273,8 @@ microbenchmark(
 
     ## Unit: milliseconds
     ##            expr      min       lq     mean   median       uq      max
-    ##   glmnet[lasso] 300.0399 303.5542 308.1593 305.9435 311.3657 319.8933
-    ##  ordinis[lasso] 278.8825 280.5231 287.1311 280.7189 292.0318 303.4989
+    ##   glmnet[lasso] 324.0667 327.7087 340.9450 348.1692 348.4202 356.3602
+    ##  ordinis[lasso] 313.3590 314.2454 324.0695 320.6374 328.1055 344.0002
     ##  neval
     ##      5
     ##      5
@@ -313,13 +313,13 @@ system.time(resb <- ordinis(x, y2, family = "binomial", tol = 1e-7, tol.irls = 1
                             penalty = "lasso",
                             alpha = 0.5,  #elastic net term
                             lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
-                            standardize = FALSE, intercept = FALSE,
+                            standardize = FALSE, intercept = TRUE,
                             weights = wts, # observation weights
                             penalty.factor = penalty.factor)) # penalty scaling factors
 ```
 
     ##    user  system elapsed 
-    ##   0.066   0.000   0.066
+    ##   0.069   0.000   0.069
 
 ``` r
 system.time(resg <- glmnet(x,y2, family = "binomial",
@@ -328,16 +328,108 @@ system.time(resg <- glmnet(x,y2, family = "binomial",
                            weights = wts, # observation weights
                            penalty.factor = penalty.factor, # penalty scaling factors
                            lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
-                           standardize = FALSE, intercept = FALSE,
+                           standardize = FALSE, intercept = TRUE,
                            thresh = 1e-16))
 ```
 
     ##    user  system elapsed 
-    ##   0.037   0.001   0.038
+    ##   0.041   0.001   0.042
 
 ``` r
 ## compare solutions
 max(abs(resb$beta[-1,] - resg$beta))
 ```
 
-    ## [1] 3.611923e-09
+    ## [1] 3.823445e-09
+
+``` r
+# now with no box constraints
+system.time(resb <- ordinis(x, y2, family = "binomial", tol = 1e-7, tol.irls = 1e-5,
+                            penalty = "lasso",
+                            alpha = 0.5,  #elastic net term
+                            standardize = FALSE, intercept = TRUE,
+                            weights = wts, # observation weights
+                            penalty.factor = penalty.factor)) # penalty scaling factors
+```
+
+    ##    user  system elapsed 
+    ##   0.087   0.001   0.087
+
+``` r
+system.time(resg <- glmnet(x,y2, family = "binomial",
+                           lambda = resb$lambda,
+                           alpha = 0.5, #elastic net term
+                           weights = wts, # observation weights
+                           penalty.factor = penalty.factor, # penalty scaling factors
+                           standardize = FALSE, intercept = TRUE,
+                           thresh = 1e-16))
+```
+
+    ##    user  system elapsed 
+    ##   0.061   0.001   0.064
+
+``` r
+## compare solutions
+max(abs(resb$beta[-1,] - resg$beta))
+```
+
+    ## [1] 6.005807e-09
+
+### A Note on the Elastic Net and linear models
+
+Due to how scaling of the response is handled different in glmnet, it
+yields slightly different solutions than both ordinis and ncvreg for
+Gaussian models with a ridge penalty term
+
+``` r
+library(ncvreg)
+
+## I'm setting all methods to have high precision just so solutions are comparable.
+## differences in computation time may be due in part to the arbitrariness of the 
+## particular precisions chosen
+system.time(resg <- glmnet(x, y, family = "gaussian", alpha = 0.25, 
+                           thresh = 1e-15))
+```
+
+    ##    user  system elapsed 
+    ##   0.481   0.006   0.492
+
+``` r
+system.time(res <- ordinis(x, y, family = "gaussian", penalty = "lasso", alpha = 0.25,
+                            tol = 1e-10, lambda = resg$lambda))
+```
+
+    ##    user  system elapsed 
+    ##   0.363   0.002   0.366
+
+``` r
+system.time(resn <- ncvreg(x, y, family="gaussian", penalty = "lasso",
+                           lambda = resg$lambda, alpha = 0.25, max.iter = 100000,
+                           eps = 1e-10))
+```
+
+    ##    user  system elapsed 
+    ##   0.507   0.003   0.511
+
+``` r
+resgg <- res; resgg$beta[-1,] <- resg$beta
+
+# compare ordinis and glmnet
+max(abs(res$beta[-1,] - resg$beta))
+```
+
+    ## [1] 0.1123304
+
+``` r
+# compare ordinis and ncvreg
+max(abs(res$beta - resn$beta))
+```
+
+    ## [1] 6.948169e-09
+
+``` r
+# compare ncvreg and glmnet
+max(abs(resn$beta[-1,] - resg$beta))
+```
+
+    ## [1] 0.1123304

@@ -4,9 +4,10 @@
 \alias{cv.ordinis}
 \title{CV Fitting for A Lasso Model Using the Coordinate Descent Algorithm}
 \usage{
-cv.ordinis(x, y, lambda = numeric(0), gamma = 3.7, type.measure = c("mse",
-  "deviance", "class", "auc", "mae"), nfolds = 10, foldid = NULL,
-  grouped = TRUE, keep = FALSE, parallel = FALSE, ...)
+cv.ordinis(x, y, lambda = numeric(0), gamma = 3.7,
+  type.measure = c("mse", "deviance", "class", "auc", "mae"),
+  nfolds = 10, foldid = NULL, grouped = TRUE, keep = FALSE,
+  parallel = FALSE, ...)
 }
 \arguments{
 \item{x}{The design matrix}

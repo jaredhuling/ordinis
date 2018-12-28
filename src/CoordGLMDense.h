@@ -186,6 +186,13 @@ protected:
         // calculate mean function
         //p = 1.0 / (1.0 + ((-1.0 * xbeta_cur.array()).exp()));
 
+
+        //dev0 <- dev
+        //varmu <- variance(mu)
+        //mu.eta.val <- mu.eta(eta)
+        //z <- (eta - offset) + (y - mu)/mu.eta.val
+        //W <- (weights*mu.eta.val*mu.eta.val)/varmu
+
         //mu = linkinv(xbeta_cur);
         update_mu();
 
@@ -195,7 +202,7 @@ protected:
         //mu_eta_nv = mu_eta(xbeta_cur);
         update_mu_eta();
 
-        //std::cout << "varmu max: " << varmu.maxCoeff() << " varmu min: " << varmu.minCoeff() << std::endl;
+        // std::cout << "varmu max: " << varmu.maxCoeff() << " varmu min: " << varmu.minCoeff() << std::endl;
 
         //std::cout << "mu_eta_nv max: " << mu_eta_nv.maxCoeff() << " mu_eta_nv min: " << mu_eta_nv.minCoeff() << std::endl;
 
@@ -232,9 +239,11 @@ protected:
         update_dev_resids();
          */
 
+        // z <- (eta - offset) + (y - mu)/mu.eta.val
         // here we update the residuals and multiply by user-specified weights, which
         // will be multiplied by X. ie X'resid_cur = X'Wz, where z is the working response from IRLS
-        resid_cur = weights.array() * (datY.array() - mu.array()); // + xbeta_cur.array() * W.array().sqrt();
+        //resid_cur = weights.array() * (datY.array() - mu.array()); // + xbeta_cur.array() * W.array().sqrt();
+        resid_cur = weights.array() * mu_eta_nv.array() * (datY.array() - mu.array()) / varmu.array(); // + xbeta_cur.array() * W.array().sqrt();
 
         //std::cout << "resid max: " <<resid_cur.maxCoeff() << "resid min: " << resid_cur.minCoeff() << std::endl;
 
@@ -248,9 +257,6 @@ protected:
         // this is needed for intercept updates
         weights_sum = W.sum();
 
-        // update deviance
-        Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
-        deviance = sum(dev_resids_all);
     }
 
     void update_intercept()
@@ -415,7 +421,7 @@ protected:
                 if (beta_prev != threshval)
                 {
 
-                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+                    if (threshval != 0.0) threshval = 0.95 * threshval + 0.05 * beta_prev;
 
                     beta.coeffRef(j)    = threshval;
 
@@ -466,7 +472,7 @@ protected:
                 if (beta_prev != threshval)
                 {
 
-                    if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+                    if (threshval != 0.0) threshval = 0.95 * threshval + 0.05 * beta_prev;
 
                     beta.coeffRef(j) = threshval;
 
@@ -881,6 +887,13 @@ public:
 
                 if(converged()) break;
             } //end coordinate descent loop
+
+            //mu = linkinv(xbeta_cur);
+            update_mu();
+
+            // update deviance
+            Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+            deviance = sum(dev_resids_all);
 
             if(converged_irls()) break;
 

@@ -4,8 +4,8 @@
 \alias{predict.cv.ordinis}
 \title{Prediction function for fitted cross validation ordinis objects}
 \usage{
-\method{predict}{cv.ordinis}(object, newx, s = c("lambda.min", "lambda.1se"),
-  ...)
+\method{predict}{cv.ordinis}(object, newx, s = c("lambda.min",
+  "lambda.1se"), ...)
 }
 \arguments{
 \item{object}{fitted \code{"cv.ordinis"} model object}

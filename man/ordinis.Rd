@@ -4,13 +4,14 @@
 \alias{ordinis}
 \title{Fitting Lasso-penalized Using the Coordinate Descent Algorithm}
 \usage{
-ordinis(x, y, weights = rep(1, NROW(y)), offset = NULL, family = NULL,
-  penalty = c("lasso", "mcp", "scad"), lambda = numeric(0), alpha = 1,
-  gamma = ifelse(penalty == "scad", 3.7, 1.4), penalty.factor = NULL,
-  upper.limits = rep(Inf, NCOL(x)), lower.limits = rep(-Inf, NCOL(x)),
-  nlambda = 100L, lambda.min.ratio = NULL, intercept = TRUE,
-  standardize = TRUE, dfmax = nvars, maxit = NULL, tol = NULL,
-  maxit.irls = 100L, tol.irls = 0.001)
+ordinis(x, y, weights = rep(1, NROW(y)), offset = NULL,
+  family = NULL, penalty = c("lasso", "mcp", "scad"),
+  lambda = numeric(0), alpha = 1, gamma = ifelse(penalty == "scad",
+  3.7, 1.4), penalty.factor = NULL, upper.limits = rep(Inf, NCOL(x)),
+  lower.limits = rep(-Inf, NCOL(x)), nlambda = 100L,
+  lambda.min.ratio = NULL, intercept = TRUE, standardize = TRUE,
+  dfmax = nvars, maxit = NULL, tol = NULL, maxit.irls = 25L,
+  tol.irls = 0.001)
 }
 \arguments{
 \item{x}{The design matrix}
@@ -87,7 +88,7 @@ set.seed(123)
 n = 100
 p = 1000
 b = c(runif(10, min = 0.1, max = 1), rep(0, p - 10))
-x = matrix(rnorm(n * p, sd = 3), n, p)
+x = matrix(rnorm(n * p, sd = 1.5), n, p)
 y = drop(x \%*\% b) + rnorm(n)
 
 
@@ -95,6 +96,7 @@ y = drop(x \%*\% b) + rnorm(n)
 res <- ordinis(x, y)
 
 y2 <- 1 * (y > 0)
+y3 <- exp(y)
 
 resb <- ordinis(x, y2, family = "binomial")
 

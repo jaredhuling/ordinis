@@ -206,7 +206,7 @@ system.time(resb <- ordinis(x, y2, family = "binomial", tol = 1e-7, tol.irls = 1
                             penalty = "lasso",
                             alpha = 0.5,  #elastic net term
                             lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
-                            standardize = FALSE, intercept = FALSE,
+                            standardize = FALSE, intercept = TRUE,
                             weights = wts, # observation weights
                             penalty.factor = penalty.factor)) # penalty scaling factors
 
@@ -216,11 +216,63 @@ system.time(resg <- glmnet(x,y2, family = "binomial",
                            weights = wts, # observation weights
                            penalty.factor = penalty.factor, # penalty scaling factors
                            lower.limits = 0, upper.limits = 0.02, # box constraints on all parameters
-                           standardize = FALSE, intercept = FALSE,
+                           standardize = FALSE, intercept = TRUE,
                            thresh = 1e-16))
 
 ## compare solutions
 max(abs(resb$beta[-1,] - resg$beta))
 
+
+# now with no box constraints
+system.time(resb <- ordinis(x, y2, family = "binomial", tol = 1e-7, tol.irls = 1e-5,
+                            penalty = "lasso",
+                            alpha = 0.5,  #elastic net term
+                            standardize = FALSE, intercept = TRUE,
+                            weights = wts, # observation weights
+                            penalty.factor = penalty.factor)) # penalty scaling factors
+
+system.time(resg <- glmnet(x,y2, family = "binomial",
+                           lambda = resb$lambda,
+                           alpha = 0.5, #elastic net term
+                           weights = wts, # observation weights
+                           penalty.factor = penalty.factor, # penalty scaling factors
+                           standardize = FALSE, intercept = TRUE,
+                           thresh = 1e-16))
+
+## compare solutions
+max(abs(resb$beta[-1,] - resg$beta))
+
+```
+
+### A Note on the Elastic Net and linear models
+
+Due to how scaling of the response is handled different in glmnet, it yields slightly different solutions than both ordinis and ncvreg for Gaussian models with a ridge penalty term
+
+```{r}
+library(ncvreg)
+
+## I'm setting all methods to have high precision just so solutions are comparable.
+## differences in computation time may be due in part to the arbitrariness of the 
+## particular precisions chosen
+system.time(resg <- glmnet(x, y, family = "gaussian", alpha = 0.25, 
+                           thresh = 1e-15))
+
+system.time(res <- ordinis(x, y, family = "gaussian", penalty = "lasso", alpha = 0.25,
+                            tol = 1e-10, lambda = resg$lambda))
+
+system.time(resn <- ncvreg(x, y, family="gaussian", penalty = "lasso",
+                           lambda = resg$lambda, alpha = 0.25, max.iter = 100000,
+                           eps = 1e-10))
+
+resgg <- res; resgg$beta[-1,] <- resg$beta
+
+# compare ordinis and glmnet
+max(abs(res$beta[-1,] - resg$beta))
+
+# compare ordinis and ncvreg
+max(abs(res$beta - resn$beta))
+
+# compare ncvreg and glmnet
+max(abs(resn$beta[-1,] - resg$beta))
 ```
 
