@@ -109,12 +109,15 @@ List coord_ordinis_dense_glm(Rcpp::NumericMatrix x_,
         Rcpp::Function linkinv    = as<Rcpp::Function>(opts["linkinv"]);
         Rcpp::Function linkfun    = as<Rcpp::Function>(opts["linkfun"]);
         Rcpp::Function dev_resids = as<Rcpp::Function>(opts["dev_resids"]);
+        Rcpp::Function valideta   = as<Rcpp::Function>(opts["valideta"]);
+        Rcpp::Function validmu    = as<Rcpp::Function>(opts["validmu"]);
 
         solver = new CoordGLMDense(datX, datY,
                                    weights, offset,
                                    penalty_factor,
                                    limits, penalty[0],
                                    var, mu_eta, linkinv, linkfun, dev_resids,
+                                   valideta, validmu,
                                    intercept, alpha,
                                    tol, maxit_irls, tol_irls);
 

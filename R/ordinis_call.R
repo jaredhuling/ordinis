@@ -155,7 +155,7 @@ ordinis <- function(x,
                 maxit <- 5000L
             } else
             {
-                maxit <- 500L
+                maxit <- 1500L
             }
         }
 
@@ -312,7 +312,9 @@ ordinis <- function(x,
                      mu_eta      = family$mu.eta,
                      linkinv     = family$linkinv,
                      linkfun     = family$linkfun,
-                     dev_resids  = family$dev.resids)
+                     dev_resids  = family$dev.resids,
+                     valideta    = family$valideta,
+                     validmu     = family$validmu)
     } else
     {
         opts <- list(maxit       = maxit,
@@ -327,7 +329,9 @@ ordinis <- function(x,
                      mu_eta      = numeric(0),
                      linkinv     = numeric(0),
                      linkfun     = numeric(0),
-                     dev_resids  = numeric(0))
+                     dev_resids  = numeric(0),
+                     valideta    = numeric(0),
+                     validmu     = numeric(0))
     }
 
     if (gamma <= 1) stop("gamma must be greater than 1")

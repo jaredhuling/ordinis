@@ -47,7 +47,7 @@ protected:
     std::string penalty;
     ArrayXd penalty_factor;       // penalty multiplication factors
 
-    Rcpp::Function var, mu_eta, linkinv, linkfun, dev_resids;
+    Rcpp::Function var, mu_eta, linkinv, linkfun, dev_resids, valideta, validmu;
 
     bool intercept;
     MapMat limits;
@@ -72,6 +72,8 @@ protected:
     typedef double (*thresh_func_ptr)(double &value, const double &penalty, const double &gamma, const double &l2, const double &denom);
 
     thresh_func_ptr thresh_func;
+
+    SparseVectori changed_set;
 
     /*
     static void soft_threshold(SparseVector &res, const Vector &vec, const double &penalty)
@@ -384,6 +386,114 @@ protected:
         }
     }
 
+    //takes a half step
+    void step_halve()
+    {
+        for (InIterVeci i_(changed_set); i_; ++i_)
+        {
+            int j = i_.index();
+            double beta_last = beta_prev.coeff( j ); //beta(j);
+            double beta_new  = beta.coeff( j );
+
+            double beta_half = 0.5 * (beta_new + beta_last);
+
+            // update coefficient to half step
+            beta.coeffRef(j)   = beta_half;
+
+            // evaluate change when we take a half step size instead
+            VectorXd delta_cur = (beta_half - beta_new) * datX.col(j);
+
+            //accordingly update residual and linear predictor
+            xbeta_cur         += delta_cur;
+            resid_cur.array() -= delta_cur.array() * W.array();
+
+            beta.coeffRef(j)    = threshval;
+
+        }
+    }
+
+    void run_step_halving(int &iterr)
+    {
+        if (std::isinf(deviance))
+        {
+            int itrr = 0;
+            while(std::isinf(deviance))
+            {
+                ++itrr;
+                if (itrr > maxit_irls)
+                {
+                    break;
+                }
+
+                //std::cout << "half step!" << itrr << std::endl;
+
+                step_halve();
+
+                //mu = linkinv(xbeta_cur);
+                update_mu();
+
+                // update deviance
+                Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+                deviance = sum(dev_resids_all);
+            }
+        }
+
+        if (!(valideta(xbeta_cur) && validmu(mu)))
+        {
+            int itrr = 0;
+            while(!(valideta(xbeta_cur) && validmu(mu)))
+            {
+                ++itrr;
+                if (itrr > maxit_irls)
+                {
+                    break;
+                }
+
+                //std::cout << "half step!" << itrr << std::endl;
+
+                step_halve();
+
+                //mu = linkinv(xbeta_cur);
+                update_mu();
+
+                // update deviance
+                Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+                deviance = sum(dev_resids_all);
+            }
+        }
+
+
+        //std::abs(deviance - deviance_prev) / (0.1 + std::abs(deviance)) < tol_irls
+        if ((deviance - deviance_prev) / (0.1 + std::abs(deviance)) >= tol_irls && iterr > 1)
+        {
+            int itrr = 0;
+
+            //std::cout << "dev:" << deviance << "dev prev:" << deviance_prev << std::endl;
+
+            while((deviance - deviance_prev) / (0.1 + std::abs(deviance)) >= -tol_irls)
+            {
+                ++itrr;
+                if (itrr > 10)
+                {
+                    break;
+                }
+
+                //std::cout << "half step!" << itrr << std::endl;
+
+                step_halve();
+
+                //mu = linkinv(xbeta_cur);
+                update_mu();
+
+                // update deviance
+                Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+                deviance = sum(dev_resids_all);
+
+                //std::cout << "fixed dev:" << deviance << "dev prev:" << deviance_prev << std::endl;
+            }
+        }
+    }
+
     //void next_beta(Vector &res, VectorXi &eligible)
     void next_beta(SparseVector &res, SparseVectori &eligible)
     {
@@ -429,6 +539,8 @@ protected:
 
                     xbeta_cur         += delta_cur;
                     resid_cur.array() -= delta_cur.array() * W.array();
+
+                    changed_set.coeffRef(j) = 1;
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -480,6 +592,8 @@ protected:
 
                     xbeta_cur         += delta_cur;
                     resid_cur.array() -= delta_cur.array() * W.array();
+
+                    changed_set.coeffRef(j) = 1;
 
                     // update eligible set if necessary
                     if (threshval != 0.0 && eligible_set.coeff(j) == 0) eligible_set.coeffRef(j) = 1;
@@ -540,7 +654,7 @@ protected:
                     if (beta_prev != threshval)
                     {
 
-                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+                        if (threshval != 0.0) threshval = 0.5 * threshval + 0.5 * beta_prev;
 
                         beta.coeffRef(j)    = threshval;
 
@@ -592,7 +706,7 @@ protected:
                     if (beta_prev != threshval)
                     {
 
-                        if (threshval != 0.0) threshval = 0.85 * threshval + 0.15 * beta_prev;
+                        if (threshval != 0.0) threshval = 0.5 * threshval + 0.5 * beta_prev;
 
                         beta.coeffRef(j) = threshval;
 
@@ -675,6 +789,8 @@ public:
                   Rcpp::Function linkinv_,
                   Rcpp::Function linkfun_,
                   Rcpp::Function dev_resids_,
+                  Rcpp::Function valideta_,
+                  Rcpp::Function validmu_,
                   bool intercept_,
                   double alpha_      = 1.0,
                   double tol_        = 1e-6,
@@ -696,6 +812,7 @@ public:
                                penalty(penalty_),
                                penalty_factor(penalty_factor_),
                                var(var_), mu_eta(mu_eta_), linkinv(linkinv_), linkfun(linkfun_), dev_resids(dev_resids_),
+                               valideta(valideta_), validmu(validmu_),
                                intercept(intercept_),
                                limits(limits_.data(), limits_.rows(), limits_.cols()),
                                alpha(alpha_), maxit_irls(maxit_irls_), tol_irls(tol_irls_),
@@ -746,6 +863,10 @@ public:
 
         eligible_set.reserve(std::min(nobs, nvars));
 
+        changed_set.setZero();
+
+        changed_set.reserve(std::min(nobs, nvars));
+
         nzero = 0;
 
         deviance = 0.0;
@@ -794,6 +915,10 @@ public:
         eligible_set.setZero();
 
         eligible_set.reserve(std::min(nobs, nvars));
+
+        changed_set.setZero();
+
+        changed_set.reserve(std::min(nobs, nvars));
 
         nzero = 0;
 
@@ -863,11 +988,20 @@ public:
                 while(current_iter < maxit)
                 {
                     current_iter++;
-                    beta_prev = beta;
+                    beta_prev     = beta;
 
-                    if (current_iter % 5 == 0) update_quadratic_approx();
+                    if (current_iter % 1 == 0) update_quadratic_approx();
 
                     update_beta(eligible_set);
+
+                    //mu = linkinv(xbeta_cur);
+                    update_mu();
+
+                    // update deviance
+                    Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
+                    deviance = sum(dev_resids_all);
+
+                    run_step_halving(irls_iter);
 
                     if(converged()) break;
                 }
@@ -895,7 +1029,13 @@ public:
             Rcpp::NumericVector dev_resids_all = dev_resids(datY, mu, weights);
             deviance = sum(dev_resids_all);
 
+            run_step_halving(irls_iter);
+
             if(converged_irls()) break;
+
+            changed_set.setZero();
+
+            changed_set.reserve(std::min(nobs, nvars));
 
         } //end irls loop
 
